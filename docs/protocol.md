@@ -59,5 +59,15 @@
 | CONNECT_REQUEST / CONNECT_RESPONSE | 可用 | 同上 |
 | TUNNELLING_REQUEST / TUNNELLING_ACK | 可用 | 同上 |
 | HPAI（IPv4 + UDP 端口） | 可用 | 同上 |
-| SEARCH / DESCRIPTION 服务 | 未实现 | — |
+| SEARCH_REQUEST / SEARCH_RESPONSE | 可用 | `knxip/knxip.mbt` |
+| DESCRIPTION_REQUEST | 可用 | 同上 |
+| ROUTING_INDICATION / ROUTING_BUSY | 可用 | 同上 |
 | 安全封装（SECURE_WRAPPER） | 未实现 | — |
+## 工程表
+
+| 能力 | 状态 |
+|---|---|
+| `1/2/3 = DPT9 温度` 行解析 | 可用 |
+| 重复组地址检测 | 可用 |
+| 未知 DPT 名称检测 | 可用 |
+| 表报告（条目数与逐行输出） | 可用 |

@@ -27,7 +27,8 @@ BC 11 01 11 01 81 00 81 BC
 | 设备 | 组对象表、写入更新、读取应答 | 可用 |
 | 总线 | 虚拟总线：写广播、读收集应答、活动轨迹 | 可用 |
 | 网关 | cEMI L_Data.req/ind/con，与 TP1 报文互转 | 可用 |
-| KNX/IP | 固定头、CONNECT_REQUEST/RESPONSE、TUNNELLING_REQUEST/ACK | 可用 |
+| KNX/IP | 固定头、SEARCH/DESCRIPTION、CONNECT、TUNNELLING、ROUTING | 可用 |
+| 工程表 | 组地址 ↔ DPT 配置、重复与越界校验、报告 | 可用 |
 | 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` | 可用 |
 | 扩展帧 | 扩展帧格式 | 未实现 |
 | 安全 | KNX Secure | 未实现 |
@@ -57,7 +58,8 @@ datapoint/  DPT 编解码
 device/     组对象与读写行为
 net/        虚拟总线与轨迹
 cemi/       cEMI L_Data 与 TP1 互转
-knxip/      KNX/IP 头与隧道帧
+knxip/      KNX/IP 头、发现、隧道与路由帧
+project/    组地址 ↔ DPT 工程表
 cmd/        命令行
 ```
 
@@ -83,7 +85,7 @@ cmd/        命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 43 个用例
+moon test --deny-warn     # 52 个用例
 moon fmt --check
 ```
 
