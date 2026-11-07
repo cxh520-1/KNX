@@ -176,3 +176,28 @@ test "device configuration frames mirror tunnelling" {
   let ack = device_configuration_ack(1, 3, 0)
   assert_eq(parse(ack.exact_view()).body.length(), 4)
 }
+
+///|
+test "description response mirrors search" {
+  let info : DeviceInfo = {
+    medium: 0x02,
+    programming_mode: false,
+    address: @addrmodel.IndividualAddress::parse("1.1.0"),
+    project_number: 0,
+    installation_number: 0,
+    serial: b"\x00\x00\x00\x00\x00\x00",
+    multicast: (224, 0, 23, 12),
+    mac: b"\x00\x00\x00\x00\x00\x00",
+    name: "Gateway",
+  }
+  let frame = description_response(Hpai::new(192, 168, 1, 10, 3671), info)
+  assert_eq(parse(frame.exact_view()).service, SERVICE_DESCRIPTION_RESPONSE)
+  assert_eq(frame.length(), 68)
+}
+
+///|
+test "routing lost message is four bytes" {
+  let parsed = parse(routing_lost_message().exact_view())
+  assert_eq(parsed.service, SERVICE_ROUTING_LOST_MESSAGE)
+  assert_eq(parsed.body.length(), 4)
+}

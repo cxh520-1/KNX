@@ -427,3 +427,25 @@ pub fn device_configuration_ack(
   body.write_byte(status.to_byte())
   packet(SERVICE_DEVICE_CONFIGURATION_ACK, body.to_bytes())
 }
+
+///|
+pub const SERVICE_DESCRIPTION_RESPONSE : Int = 0x0204
+
+///|
+pub const SERVICE_ROUTING_LOST_MESSAGE : Int = 0x0531
+
+///|
+/// Build a description response, which carries the same device block as a
+/// search response.
+pub fn description_response(control : Hpai, info : DeviceInfo) -> Bytes {
+  let body = Buffer()
+  body.write_bytes(control.encode().exact_view())
+  body.write_bytes(info.encode().exact_view())
+  packet(SERVICE_DESCRIPTION_RESPONSE, body.to_bytes())
+}
+
+///|
+/// Build a routing lost message: the sender could not deliver a frame.
+pub fn routing_lost_message() -> Bytes {
+  packet(SERVICE_ROUTING_LOST_MESSAGE, b"\x04\x00\x00\x00")
+}
