@@ -3,12 +3,14 @@
 // exponent must be 1 because the mantissa would otherwise not fit in eleven
 // bits.
 
+///|
 test "2-byte float encodes 21.0 as 0x0C1A" {
   let encoded = encode(Dpt9, F16(21.0))
   assert_eq(hex_of(encoded), "0C1A")
   assert_eq(decode(Dpt9, encoded.exact_view()), F16(21.0))
 }
 
+///|
 test "2-byte float keeps sign and zero" {
   assert_eq(decode(Dpt9, bytes_of_hex("0000").exact_view()), F16(0.0))
   let negative = encode(Dpt9, F16(-0.5))
@@ -18,6 +20,7 @@ test "2-byte float keeps sign and zero" {
   }
 }
 
+///|
 test "one byte types" {
   assert_eq(hex_of(encode(Dpt1, Bool(true))), "01")
   assert_eq(hex_of(encode(Dpt5, U8(255))), "FF")
@@ -25,18 +28,21 @@ test "one byte types" {
   assert_eq(decode(Dpt6, bytes_of_hex("FF").exact_view()), I8(-1))
 }
 
+///|
 test "two byte integers" {
   assert_eq(hex_of(encode(Dpt7, U16(0x1234))), "1234")
   assert_eq(hex_of(encode(Dpt8, I16(-2))), "FFFE")
   assert_eq(decode(Dpt8, bytes_of_hex("FFFE").exact_view()), I16(-2))
 }
 
+///|
 test "string pads to fourteen bytes" {
   let encoded = encode(Dpt16, Text("hello"))
   assert_eq(encoded.length(), 14)
   assert_eq(decode(Dpt16, encoded.exact_view()), Text("hello"))
 }
 
+///|
 test "out of range values are refused" {
   let caught = try {
     ignore(encode(Dpt5, U8(256)))
@@ -48,6 +54,7 @@ test "out of range values are refused" {
   assert_true(caught)
 }
 
+///|
 test "wrong length is refused" {
   let caught = try {
     ignore(decode(Dpt7, b"\x00".exact_view()))
@@ -59,6 +66,7 @@ test "wrong length is refused" {
   assert_true(caught)
 }
 
+///|
 test "non ascii text is refused" {
   let caught = try {
     ignore(encode(Dpt16, Text("温度")))
@@ -116,4 +124,41 @@ fn bytes_of_hex(text : String) -> Bytes {
     }
   }
   out.to_bytes()
+}
+
+///|
+test "time packs weekday and clock" {
+  let encoded = encode(
+    Dpt10,
+    Time({ weekday: 2, hour: 12, minute: 30, second: 45, }),
+  )
+  assert_eq(hex_of(encoded), "4C1E2D")
+  assert_eq(
+    decode(Dpt10, encoded.exact_view()),
+    Time({ weekday: 2, hour: 12, minute: 30, second: 45, }),
+  )
+}
+
+///|
+test "date packs day month and two digit year" {
+  let encoded = encode(Dpt11, Date({ year: 2026, month: 11, day: 7, }))
+  assert_eq(hex_of(encoded), "070B1A")
+  assert_eq(
+    decode(Dpt11, encoded.exact_view()),
+    Date({ year: 2026, month: 11, day: 7, }),
+  )
+}
+
+///|
+test "32-bit integers" {
+  assert_eq(hex_of(encode(Dpt12, U32(0x01020304L))), "01020304")
+  assert_eq(hex_of(encode(Dpt13, I32(-2L))), "FFFFFFFE")
+  assert_eq(decode(Dpt13, bytes_of_hex("FFFFFFFE").exact_view()), I32(-2L))
+}
+
+///|
+test "4-byte float" {
+  let encoded = encode(Dpt14, F32(1.5))
+  assert_eq(hex_of(encoded), "3FC00000")
+  assert_eq(decode(Dpt14, encoded.exact_view()), F32(1.5))
 }

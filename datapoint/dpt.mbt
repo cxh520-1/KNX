@@ -22,6 +22,11 @@ pub(all) enum Dpt {
   Dpt7
   Dpt8
   Dpt9
+  Dpt10
+  Dpt11
+  Dpt12
+  Dpt13
+  Dpt14
   Dpt16
 } derive(Debug, Eq)
 
@@ -34,6 +39,11 @@ pub(all) enum Value {
   U16(Int)
   I16(Int)
   F16(Double)
+  Time(TimeValue)
+  Date(DateValue)
+  U32(Int64)
+  I32(Int64)
+  F32(Double)
   Text(String)
 } derive(Debug, Eq)
 
@@ -46,6 +56,11 @@ pub fn name(dpt : Dpt) -> String {
     Dpt7 => "DPT-7 16-bit unsigned"
     Dpt8 => "DPT-8 16-bit signed"
     Dpt9 => "DPT-9 2-byte float"
+    Dpt10 => "DPT-10 time"
+    Dpt11 => "DPT-11 date"
+    Dpt12 => "DPT-12 32-bit unsigned"
+    Dpt13 => "DPT-13 32-bit signed"
+    Dpt14 => "DPT-14 4-byte float"
     Dpt16 => "DPT-16 string"
   }
 }
@@ -59,7 +74,7 @@ pub fn unit(dpt : Dpt) -> String {
 }
 
 ///|
-pub fn encode(dpt : Dpt, value : Value) -> Bytes raise DptError {
+fn encode_base(dpt : Dpt, value : Value) -> Bytes raise DptError {
   match dpt {
     Dpt1 =>
       match value {
@@ -127,11 +142,12 @@ pub fn encode(dpt : Dpt, value : Value) -> Bytes raise DptError {
         }
         _ => raise WrongKind
       }
+    _ => raise WrongKind
   }
 }
 
 ///|
-pub fn decode(dpt : Dpt, data : BytesView) -> Value raise DptError {
+fn decode_base(dpt : Dpt, data : BytesView) -> Value raise DptError {
   match dpt {
     Dpt1 => {
       expect_length(data, 1)
@@ -170,6 +186,7 @@ pub fn decode(dpt : Dpt, data : BytesView) -> Value raise DptError {
       }
       Text(out.to_string())
     }
+    _ => raise WrongKind
   }
 }
 
