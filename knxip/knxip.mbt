@@ -166,12 +166,17 @@ pub fn tunnelling_ack(channel : Int, sequence : Int, status : Int) -> Bytes {
 ///|
 pub fn service_name(service : Int) -> String {
   match service {
+    0x0201 => "SEARCH_REQUEST"
+    0x0202 => "SEARCH_RESPONSE"
+    0x0203 => "DESCRIPTION_REQUEST"
     0x0205 => "CONNECT_REQUEST"
     0x0206 => "CONNECT_RESPONSE"
     0x0420 => "TUNNELLING_REQUEST"
     0x0421 => "TUNNELLING_ACK"
     0x0209 => "DISCONNECT_REQUEST"
     0x020A => "DISCONNECT_RESPONSE"
+    0x0530 => "ROUTING_INDICATION"
+    0x0532 => "ROUTING_BUSY"
     _ => "UNKNOWN"
   }
 }
@@ -181,4 +186,129 @@ fn copy(view : BytesView) -> Bytes {
   let out = Buffer()
   out.write_bytes(view)
   out.to_bytes()
+}
+
+///|
+pub const SERVICE_SEARCH_REQUEST : Int = 0x0201
+
+///|
+pub const SERVICE_SEARCH_RESPONSE : Int = 0x0202
+
+///|
+pub const SERVICE_DESCRIPTION_REQUEST : Int = 0x0203
+
+///|
+pub const SERVICE_ROUTING_INDICATION : Int = 0x0530
+
+///|
+pub const SERVICE_ROUTING_BUSY : Int = 0x0532
+
+///|
+/// Device information block carried by a search response.
+pub(all) struct DeviceInfo {
+  medium : Int
+  programming_mode : Bool
+  address : @addrmodel.IndividualAddress
+  project_number : Int
+  installation_number : Int
+  serial : Bytes
+  multicast : (Int, Int, Int, Int)
+  mac : Bytes
+  name : String
+} derive(Debug, Eq)
+
+///|
+pub fn DeviceInfo::encode(self : DeviceInfo) -> Bytes {
+  let out = Buffer()
+  out.write_byte(0x36)
+  out.write_byte(0x01)
+  out.write_byte(self.medium.to_byte())
+  out.write_byte((if self.programming_mode { 1 } else { 0 }).to_byte())
+  out.write_byte(((self.address.to_u16() >> 8) & 0xFF).to_byte())
+  out.write_byte((self.address.to_u16() & 0xFF).to_byte())
+  let id = self.project_number * 16 + self.installation_number
+  out.write_byte(((id >> 8) & 0xFF).to_byte())
+  out.write_byte((id & 0xFF).to_byte())
+  out.write_bytes(self.serial.exact_view())
+  out.write_byte(self.multicast.0.to_byte())
+  out.write_byte(self.multicast.1.to_byte())
+  out.write_byte(self.multicast.2.to_byte())
+  out.write_byte(self.multicast.3.to_byte())
+  out.write_bytes(self.mac.exact_view())
+  let name = self.name
+  for index in 0..<30 {
+    if index < name.length() {
+      out.write_byte(name.get_char(index).unwrap().to_int().to_byte())
+    } else {
+      out.write_byte(b'\x00')
+    }
+  }
+  out.to_bytes()
+}
+
+///|
+pub fn DeviceInfo::decode(data : BytesView) -> DeviceInfo raise KnxipError {
+  if data.length() < 54 || data[0].to_int() != 0x36 || data[1].to_int() != 0x01 {
+    raise BodyTooShort(data.length())
+  }
+  let id = (data[6].to_int() << 8) | data[7].to_int()
+  let out = StringBuilder()
+  for index in 24..<54 {
+    let byte = data[index].to_int()
+    if byte != 0 {
+      out.write_char(Int::unsafe_to_char(byte))
+    }
+  }
+  {
+    medium: data[2].to_int(),
+    programming_mode: data[3].to_int() != 0,
+    address: @addrmodel.IndividualAddress::from_u16(
+      (data[4].to_int() << 8) | data[5].to_int(),
+    ),
+    project_number: id >> 4,
+    installation_number: id & 0x0F,
+    serial: copy(data[8:14]),
+    multicast: (
+      data[14].to_int(),
+      data[15].to_int(),
+      data[16].to_int(),
+      data[17].to_int(),
+    ),
+    mac: copy(data[18:24]),
+    name: out.to_string(),
+  }
+}
+
+///|
+/// Build a discovery request. The body is the client endpoint.
+pub fn search_request(discovery : Hpai) -> Bytes {
+  packet(SERVICE_SEARCH_REQUEST, discovery.encode())
+}
+
+///|
+/// Build a discovery answer with one device information block.
+pub fn search_response(control : Hpai, info : DeviceInfo) -> Bytes {
+  let body = Buffer()
+  body.write_bytes(control.encode().exact_view())
+  body.write_bytes(info.encode().exact_view())
+  packet(SERVICE_SEARCH_RESPONSE, body.to_bytes())
+}
+
+///|
+/// Build a description request, which returns the same blocks as a search.
+pub fn description_request(control : Hpai) -> Bytes {
+  packet(SERVICE_DESCRIPTION_REQUEST, control.encode())
+}
+
+///|
+/// Build a routing indication: no tunnel header, the cEMI body follows the
+/// KNX/IP header directly.
+pub fn routing_indication(cemi : BytesView) -> Bytes {
+  packet(SERVICE_ROUTING_INDICATION, copy(cemi))
+}
+
+///|
+/// Build a routing busy frame.
+pub fn routing_busy() -> Bytes {
+  packet(SERVICE_ROUTING_BUSY, b"\x04\x00\x00\x00")
 }
