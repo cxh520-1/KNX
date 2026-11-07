@@ -129,3 +129,20 @@ fn digit(ch : Char) -> Int {
     -1
   }
 }
+
+///|
+test "long tpdu switches to the extended frame" {
+  let source = @addrmodel.IndividualAddress::parse("1.1.1")
+  let destination = @addrmodel.GroupAddress::parse("2/1/1")
+  let payload = Buffer()
+  for index in 0..<20 {
+    payload.write_byte((index + 1).to_byte())
+  }
+  let telegram = Telegram::new(source, Group(destination), payload.to_bytes())
+  let encoded = telegram.encode()
+  assert_eq(encoded[0].to_int() & 0x80, 0)
+  assert_eq(encoded.length(), 8 + 20)
+  let back = Telegram::decode(encoded.exact_view())
+  assert_eq(back.tpdu.length(), 20)
+  assert_eq(back.destination, Group(destination))
+}
