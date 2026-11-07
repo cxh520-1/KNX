@@ -1,0 +1,5 @@
+import {
+  "cxh520-1/knx/knxip",
+  "cxh520-1/knx/cemi",
+  "cxh520-1/knx/telegram",
+}

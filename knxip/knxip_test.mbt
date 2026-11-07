@@ -201,3 +201,62 @@ test "routing lost message is four bytes" {
   assert_eq(parsed.service, SERVICE_ROUTING_LOST_MESSAGE)
   assert_eq(parsed.body.length(), 4)
 }
+
+///|
+test "connect response fields are extracted" {
+  let info = parse_connect_response(b"\x07\x00")
+  assert_eq(info.channel, 7)
+  assert_eq(info.status, 0)
+}
+
+///|
+test "tunnel header validates the structure byte" {
+  let header = parse_tunnel_header(b"\x04\x03\x09\x00")
+  assert_eq(header.channel, 3)
+  assert_eq(header.sequence, 9)
+  let caught = try {
+    ignore(parse_tunnel_header(b"\x05\x03\x09\x00"))
+    false
+  } catch {
+    KnxipError::BodyTooShort(_) => true
+    _ => false
+  }
+  assert_true(caught)
+}
+
+///|
+test "search response decomposes into endpoint and device" {
+  let info : DeviceInfo = {
+    medium: 0x02,
+    programming_mode: false,
+    address: @addrmodel.IndividualAddress::parse("1.1.0"),
+    project_number: 0,
+    installation_number: 0,
+    serial: b"\x00\x00\x00\x00\x00\x00",
+    multicast: (224, 0, 23, 12),
+    mac: b"\x00\x00\x00\x00\x00\x00",
+    name: "Gateway",
+  }
+  let frame = search_response(Hpai::new(192, 168, 1, 10, 3671), info)
+  let packet = parse(frame.exact_view())
+  let answer = parse_search_response(packet.body.exact_view())
+  assert_eq(answer.endpoint.port, 3671)
+  assert_eq(answer.info.name, "Gateway")
+}
+
+///|
+test "disconnect request carries the endpoint" {
+  let frame = disconnect_request(7, Hpai::new(192, 168, 1, 10, 3671))
+  assert_eq(frame.length(), 16)
+  let parsed = parse(frame.exact_view())
+  assert_eq(parsed.service, SERVICE_DISCONNECT_REQUEST)
+  assert_eq(parsed.body[0].to_int(), 7)
+}
+
+///|
+test "disconnect response is two bytes" {
+  let frame = disconnect_response(7, 0)
+  let parsed = parse(frame.exact_view())
+  assert_eq(parsed.service, SERVICE_DISCONNECT_RESPONSE)
+  assert_eq(parsed.body.length(), 2)
+}

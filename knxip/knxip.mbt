@@ -449,3 +449,78 @@ pub fn description_response(control : Hpai, info : DeviceInfo) -> Bytes {
 pub fn routing_lost_message() -> Bytes {
   packet(SERVICE_ROUTING_LOST_MESSAGE, b"\x04\x00\x00\x00")
 }
+
+///|
+/// Fields of a connect response body.
+pub(all) struct ConnectResponseInfo {
+  channel : Int
+  status : Int
+} derive(Debug, Eq)
+
+///|
+pub fn parse_connect_response(
+  body : BytesView,
+) -> ConnectResponseInfo raise KnxipError {
+  if body.length() < 2 {
+    raise BodyTooShort(body.length())
+  }
+  { channel: body[0].to_int(), status: body[1].to_int(), }
+}
+
+///|
+/// Channel, sequence and status shared by the tunnelling and device
+/// management bodies.
+pub(all) struct TunnelHeader {
+  channel : Int
+  sequence : Int
+  status : Int
+} derive(Debug, Eq)
+
+///|
+pub fn parse_tunnel_header(body : BytesView) -> TunnelHeader raise KnxipError {
+  if body.length() < 4 || body[0].to_int() != 0x04 {
+    raise BodyTooShort(body.length())
+  }
+  {
+    channel: body[1].to_int(),
+    sequence: body[2].to_int(),
+    status: body[3].to_int(),
+  }
+}
+
+///|
+/// A search response decomposed into its endpoint and device block.
+pub(all) struct SearchAnswer {
+  endpoint : Hpai
+  info : DeviceInfo
+} derive(Debug, Eq)
+
+///|
+pub fn parse_search_response(body : BytesView) -> SearchAnswer raise KnxipError {
+  if body.length() < 62 {
+    raise BodyTooShort(body.length())
+  }
+  {
+    endpoint: Hpai::decode(body[0:8]),
+    info: DeviceInfo::decode(body[8:body.length()]),
+  }
+}
+
+///|
+/// Build a disconnect request for an open channel.
+pub fn disconnect_request(channel : Int, control : Hpai) -> Bytes {
+  let body = Buffer()
+  body.write_byte(channel.to_byte())
+  body.write_byte(0x00)
+  body.write_bytes(control.encode().exact_view())
+  packet(SERVICE_DISCONNECT_REQUEST, body.to_bytes())
+}
+
+///|
+/// Build the acknowledgement for a disconnect request.
+pub fn disconnect_response(channel : Int, status : Int) -> Bytes {
+  let body = Buffer()
+  body.write_byte(channel.to_byte())
+  body.write_byte(status.to_byte())
+  packet(SERVICE_DISCONNECT_RESPONSE, body.to_bytes())
+}
