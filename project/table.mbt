@@ -128,6 +128,8 @@ pub fn dpt_of(text : String) -> @datapoint.Dpt? {
     "DPT13" => Some(@datapoint.Dpt13)
     "DPT14" => Some(@datapoint.Dpt14)
     "DPT16" => Some(@datapoint.Dpt16)
+    "DPT17" => Some(@datapoint.Dpt17)
+    "DPT5PCT" => Some(@datapoint.Dpt5Percent)
     _ => None
   }
 }

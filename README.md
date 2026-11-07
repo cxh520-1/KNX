@@ -20,16 +20,16 @@ BC 11 01 11 01 81 00 81 BC
 | 层 | 内容 | 状态 |
 |---|---|---|
 | 地址 | 个体地址 `1.2.3`、组地址 `1/2/3`，解析/格式化/打包 | 可用 |
-| 报文 | TP1 标准帧：控制、源、目的、NPCI、TPDU、校验 | 可用 |
+| 报文 | TP1 标准帧与扩展帧：控制、源、目的、NPCI、TPDU、校验 | 可用 |
 | 服务 | GroupRead / GroupWrite / GroupResponse，短值内联与长值带长度 | 可用 |
 | 帧封装 | FT1.2：`10 02 … 10 03`，`0x10` 双写转义 | 可用 |
-| 数据点 | DPT-1 / 5 / 6 / 7 / 8 / 9 / 10 / 11 / 12 / 13 / 14 / 16 | 可用 |
+| 数据点 | DPT-1 / 5 / 6 / 7 / 8 / 9 / 10 / 11 / 12 / 13 / 14 / 16 / 17，含百分比与场景 | 可用 |
 | 设备 | 组对象表、写入更新、读取应答 | 可用 |
 | 总线 | 虚拟总线：写广播、读收集应答、活动轨迹 | 可用 |
 | 网关 | cEMI L_Data.req/ind/con，与 TP1 报文互转 | 可用 |
 | KNX/IP | 固定头、SEARCH/DESCRIPTION、CONNECT、TUNNELLING、ROUTING、设备管理 | 可用 |
 | 工程表 | 组地址 ↔ DPT 配置、重复与越界校验、报告 | 可用 |
-| 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` / `search` / `device` | 可用 |
+| 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` / `search` / `device` / `plan` / `desc` | 可用 |
 | 扩展帧 | 扩展帧格式 | 未实现 |
 | 安全 | KNX Secure | 未实现 |
 
@@ -78,7 +78,7 @@ cmd/        命令行
 ## 边界
 
 - 只做报文与设备模型，不做电气层、不做总线仲裁时序。
-- 扩展帧格式、KNX Secure、ETS 工程导入未实现。
+- KNX Secure、ETS 工程导入、总线仲裁时序未实现。
 - 没有 ETS 工程文件导入；组地址由调用方配置。
 
 见 [`docs/architecture.md`](docs/architecture.md) 与 [`docs/protocol.md`](docs/protocol.md)。
@@ -87,7 +87,7 @@ cmd/        命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 57 个用例
+moon test --deny-warn     # 62 个用例
 moon fmt --check
 ```
 

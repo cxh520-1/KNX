@@ -118,6 +118,9 @@ pub fn value_text(value : @datapoint.Value) -> String {
     @datapoint.I32(number) => number.to_string()
     @datapoint.F32(number) => number.to_string()
     @datapoint.Text(text) => text
+    @datapoint.Percent(value) => value.to_string() + "%"
+    @datapoint.Scene(number, store) =>
+      "scene " + number.to_string() + (if store { " store" } else { "" })
   }
 }
 

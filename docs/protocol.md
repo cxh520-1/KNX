@@ -8,7 +8,7 @@
 | 控制字节校验 `(ctrl & 0x53) == 0x10` | 可用 | 同上 |
 | NPCI：组/个体、跳数、长度 | 可用 | 同上 |
 | 校验字节（逐字节异或） | 可用 | 同上 |
-| 扩展帧 | 未实现 | 返回 `ExtendedFrame` |
+| 扩展帧（长 TPDU） | 可用 | `telegram/frame.mbt` |
 | FT1.2 封装与 `0x10` 双写 | 可用 | `busframe/ft12.mbt` |
 
 ## 组服务
@@ -33,6 +33,8 @@
 | 8 | 16 位有符号 | 2 字节 | -32768..32767 |
 | 9 | 2 字节浮点 | 2 字节 | `0.01 × 尾数 × 2^指数` |
 | 16 | 字符串 | 14 字节 | ASCII，NUL 补齐 |
+| 17 | 场景号 + 存储位 | 1 字节 | 号码 0..63，bit7 存储 |
+| 5.004 | 百分比 | 1 字节 | 0..100 % 映射到 0..255 |
 | 10 | 时间 | 3 字节 | 未实现 |
 | 11 | 日期 | 3 字节 | 未实现 |
 | 12/13 | 32 位整数 | 4 字节 | 未实现 |
@@ -63,7 +65,7 @@
 | DESCRIPTION_REQUEST | 可用 | 同上 |
 | ROUTING_INDICATION / ROUTING_BUSY | 可用 | 同上 |
 | 服务族 DIB（能力协商） | 可用 | 同上 |
-| DEVICE_CONFIGURATION_REQUEST / ACK | 可用 | 同上 |
+| DEVICE_CONFIGURATION_REQUEST / ACK | 可用 | 同上 |`r`n| DESCRIPTION_RESPONSE | 可用 | 同上 |`r`n| ROUTING_LOST_MESSAGE | 可用 | 同上 |
 | 安全封装（SECURE_WRAPPER） | 未实现 | — |
 ## 工程表
 
