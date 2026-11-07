@@ -8,6 +8,7 @@ import {
   "cxh520-1/knx/net",
   "cxh520-1/knx/cemi",
   "cxh520-1/knx/knxip",
+  "cxh520-1/knx/project",
 }
 
 pkgtype(kind: "executable")

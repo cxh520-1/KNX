@@ -14,6 +14,8 @@ fn main {
     "tunnel" => tunnel()
     "search" => search()
     "device" => device()
+    "plan" => plan()
+    "desc" => desc()
     _ => usage()
   }
 }
@@ -30,6 +32,8 @@ fn usage() -> Unit {
   println("  knx tunnel         build a connect and tunnelling request")
   println("  knx search         build a discovery request and response")
   println("  knx device         build a device configuration request")
+  println("  knx plan           parse a sample group address table")
+  println("  knx desc           build a description response")
 }
 
 ///|
@@ -418,4 +422,46 @@ fn device() -> Unit {
   )
   println("DEVICE_CONFIGURATION_ACK")
   println("  " + spaced_hex(@knxip.device_configuration_ack(1, 0, 0)))
+}
+
+///|
+fn plan() -> Unit {
+  let text = "# sample project\n1/2/1 = DPT1 客厅灯\n1/2/2 = DPT5 调光\n1/2/3 = DPT9 温度\n1/2/4 = DPT17 场景\n"
+  let table = @project.Table::parse(text) catch {
+    @project.ProjectError::BadLine(number, _) => {
+      println("error: bad line " + number.to_string())
+      return
+    }
+    @project.ProjectError::Duplicate(address) => {
+      println("error: duplicate " + address)
+      return
+    }
+    @project.ProjectError::UnknownDpt(name) => {
+      println("error: unknown dpt " + name)
+      return
+    }
+    _ => {
+      println("error: empty table")
+      return
+    }
+  }
+  println(table.report())
+}
+
+///|
+fn desc() -> Unit {
+  let endpoint = @knxip.Hpai::new(192, 168, 1, 10, 3671)
+  let info : @knxip.DeviceInfo = {
+    medium: 0x02,
+    programming_mode: false,
+    address: ia("1.1.0"),
+    project_number: 0,
+    installation_number: 0,
+    serial: b"\x00\x11\x22\x33\x44\x55",
+    multicast: (224, 0, 23, 12),
+    mac: b"\x00\x11\x22\x33\x44\x55",
+    name: "KNX Gateway",
+  }
+  println("DESCRIPTION_RESPONSE")
+  println("  " + spaced_hex(@knxip.description_response(endpoint, info)))
 }
