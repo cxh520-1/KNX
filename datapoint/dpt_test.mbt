@@ -162,3 +162,24 @@ test "4-byte float" {
   assert_eq(hex_of(encoded), "3FC00000")
   assert_eq(decode(Dpt14, encoded.exact_view()), F32(1.5))
 }
+
+///|
+test "percent scaling hits the endpoints" {
+  assert_eq(percent_to_raw(0), 0)
+  assert_eq(percent_to_raw(100), 255)
+  assert_eq(percent_to_raw(50), 128)
+  assert_eq(raw_to_percent(255), 100)
+  assert_eq(raw_to_percent(0), 0)
+}
+
+///|
+test "percent scaling rejects out of range" {
+  let caught = try {
+    ignore(percent_to_raw(101))
+    false
+  } catch {
+    DptError::OutOfRange(_) => true
+    _ => false
+  }
+  assert_true(caught)
+}
