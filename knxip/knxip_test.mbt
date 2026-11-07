@@ -128,3 +128,51 @@ test "routing busy is four bytes" {
   assert_eq(parsed.service, SERVICE_ROUTING_BUSY)
   assert_eq(parsed.body.length(), 4)
 }
+
+///|
+test "service families block lists ids and versions" {
+  let families : ServiceFamilies = {
+    families: [
+      { id: 0x02, version: 1, },
+      { id: 0x04, version: 2, },
+      { id: 0x05, version: 1, },
+    ],
+  }
+  let encoded = families.encode()
+  assert_eq(hex_of(encoded), "0802020104020501")
+  assert_eq(ServiceFamilies::decode(encoded.exact_view()), families)
+  assert_eq(family_name(0x04), "Tunnelling")
+}
+
+///|
+test "search response can advertise families" {
+  let info : DeviceInfo = {
+    medium: 0x02,
+    programming_mode: false,
+    address: @addrmodel.IndividualAddress::parse("1.1.0"),
+    project_number: 0,
+    installation_number: 0,
+    serial: b"\x00\x00\x00\x00\x00\x00",
+    multicast: (224, 0, 23, 12),
+    mac: b"\x00\x00\x00\x00\x00\x00",
+    name: "Gateway",
+  }
+  let families : ServiceFamilies = { families: [{ id: 0x04, version: 1, }], }
+  let frame = search_response_with_families(
+    Hpai::new(192, 168, 1, 10, 3671),
+    info,
+    families,
+  )
+  assert_eq(frame.length(), 72)
+  assert_eq(parse(frame.exact_view()).service, SERVICE_SEARCH_RESPONSE)
+}
+
+///|
+test "device configuration frames mirror tunnelling" {
+  let request = device_configuration_request(1, 3, b"\x11\x00")
+  let parsed = parse(request.exact_view())
+  assert_eq(parsed.service, SERVICE_DEVICE_CONFIGURATION_REQUEST)
+  assert_eq(parsed.body.length(), 6)
+  let ack = device_configuration_ack(1, 3, 0)
+  assert_eq(parse(ack.exact_view()).body.length(), 4)
+}

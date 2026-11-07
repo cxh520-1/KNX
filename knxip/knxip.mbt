@@ -312,3 +312,118 @@ pub fn routing_indication(cemi : BytesView) -> Bytes {
 pub fn routing_busy() -> Bytes {
   packet(SERVICE_ROUTING_BUSY, b"\x04\x00\x00\x00")
 }
+
+///|
+pub const SERVICE_DEVICE_CONFIGURATION_REQUEST : Int = 0x0310
+
+///|
+pub const SERVICE_DEVICE_CONFIGURATION_ACK : Int = 0x0311
+
+///|
+/// One service family and the version the device supports.
+pub(all) struct ServiceFamily {
+  id : Int
+  version : Int
+} derive(Debug, Eq)
+
+///|
+/// The supported-service-families block of a search response.
+pub(all) struct ServiceFamilies {
+  families : Array[ServiceFamily]
+} derive(Debug, Eq)
+
+///|
+pub fn ServiceFamilies::encode(self : ServiceFamilies) -> Bytes {
+  let length = 2 + self.families.length() * 2
+  let out = Buffer()
+  out.write_byte(length.to_byte())
+  out.write_byte(0x02)
+  for family in self.families {
+    out.write_byte(family.id.to_byte())
+    out.write_byte(family.version.to_byte())
+  }
+  out.to_bytes()
+}
+
+///|
+pub fn ServiceFamilies::decode(
+  data : BytesView,
+) -> ServiceFamilies raise KnxipError {
+  if data.length() < 2 || data[1].to_int() != 0x02 {
+    raise BodyTooShort(data.length())
+  }
+  let length = data[0].to_int()
+  if length > data.length() || length < 2 {
+    raise BadLength(length, data.length())
+  }
+  let families : Array[ServiceFamily] = []
+  let mut index = 2
+  while index + 1 < length {
+    families.push({
+      id: data[index].to_int(),
+      version: data[index + 1].to_int(),
+    })
+    index = index + 2
+  }
+  { families, }
+}
+
+///|
+pub fn family_name(id : Int) -> String {
+  match id {
+    0x02 => "Core"
+    0x03 => "Device Management"
+    0x04 => "Tunnelling"
+    0x05 => "Routing"
+    0x06 => "Remote Logging"
+    0x07 => "Remote Configuration"
+    0x08 => "Object Server"
+    0x09 => "Security"
+    _ => "Unknown"
+  }
+}
+
+///|
+/// Build a discovery answer that also advertises service families.
+pub fn search_response_with_families(
+  control : Hpai,
+  info : DeviceInfo,
+  families : ServiceFamilies,
+) -> Bytes {
+  let body = Buffer()
+  body.write_bytes(control.encode().exact_view())
+  body.write_bytes(info.encode().exact_view())
+  body.write_bytes(families.encode().exact_view())
+  packet(SERVICE_SEARCH_RESPONSE, body.to_bytes())
+}
+
+///|
+/// Build a device configuration request, which carries a cEMI body like a
+/// tunnelling request but is used for management instead of group traffic.
+pub fn device_configuration_request(
+  channel : Int,
+  sequence : Int,
+  cemi : BytesView,
+) -> Bytes {
+  let body = Buffer()
+  body.write_byte(0x04)
+  body.write_byte(channel.to_byte())
+  body.write_byte(sequence.to_byte())
+  body.write_byte(0x00)
+  body.write_bytes(cemi)
+  packet(SERVICE_DEVICE_CONFIGURATION_REQUEST, body.to_bytes())
+}
+
+///|
+pub fn device_configuration_ack(
+  channel : Int,
+  sequence : Int,
+  status : Int,
+) -> Bytes {
+  let body = Buffer()
+  body.write_byte(0x04)
+  body.write_byte(channel.to_byte())
+  body.write_byte(sequence.to_byte())
+  body.write_byte(status.to_byte())
+  packet(SERVICE_DEVICE_CONFIGURATION_ACK, body.to_bytes())
+}
