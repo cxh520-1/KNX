@@ -62,6 +62,8 @@
 | SEARCH_REQUEST / SEARCH_RESPONSE | 可用 | `knxip/knxip.mbt` |
 | DESCRIPTION_REQUEST | 可用 | 同上 |
 | ROUTING_INDICATION / ROUTING_BUSY | 可用 | 同上 |
+| 服务族 DIB（能力协商） | 可用 | 同上 |
+| DEVICE_CONFIGURATION_REQUEST / ACK | 可用 | 同上 |
 | 安全封装（SECURE_WRAPPER） | 未实现 | — |
 ## 工程表
 

@@ -27,9 +27,9 @@ BC 11 01 11 01 81 00 81 BC
 | 设备 | 组对象表、写入更新、读取应答 | 可用 |
 | 总线 | 虚拟总线：写广播、读收集应答、活动轨迹 | 可用 |
 | 网关 | cEMI L_Data.req/ind/con，与 TP1 报文互转 | 可用 |
-| KNX/IP | 固定头、SEARCH/DESCRIPTION、CONNECT、TUNNELLING、ROUTING | 可用 |
+| KNX/IP | 固定头、SEARCH/DESCRIPTION、CONNECT、TUNNELLING、ROUTING、设备管理 | 可用 |
 | 工程表 | 组地址 ↔ DPT 配置、重复与越界校验、报告 | 可用 |
-| 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` | 可用 |
+| 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` / `search` / `device` | 可用 |
 | 扩展帧 | 扩展帧格式 | 未实现 |
 | 安全 | KNX Secure | 未实现 |
 
@@ -44,6 +44,8 @@ moon run cmd -- frames
 moon run cmd -- soak 200
 moon run cmd -- cemi "1100BC8011011101810081"
 moon run cmd -- tunnel
+moon run cmd -- search
+moon run cmd -- device
 ```
 
 `demo` 会在一台交换器、一盏灯、一个调光器和一个温度传感器之间跑一轮：开灯、读状态、调到 80、上报 21.5 °C，然后打印轨迹和经过总线的五条帧。
@@ -85,7 +87,7 @@ cmd/        命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 52 个用例
+moon test --deny-warn     # 57 个用例
 moon fmt --check
 ```
 
