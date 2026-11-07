@@ -1,0 +1,7 @@
+_build/
+.mooncakes/
+target/
+*.wasm
+*.wat
+.DS_Store
+Thumbs.db
