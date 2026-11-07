@@ -87,7 +87,7 @@ cmd/        命令行
 - KNX Secure、ETS 工程导入、总线仲裁时序未实现。
 - 没有 ETS 工程文件导入；组地址由调用方配置。
 
-见 [`docs/architecture.md`](docs/architecture.md) 与 [`docs/protocol.md`](docs/protocol.md)。
+见 [`docs/architecture.md`](docs/architecture.md)、[`docs/protocol.md`](docs/protocol.md) 与 [`docs/proposal.md`](docs/proposal.md)。
 
 ## 验证
 
