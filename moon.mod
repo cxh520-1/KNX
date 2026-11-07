@@ -6,7 +6,7 @@ readme = "README.md"
 
 repository = "https://github.com/cxh520-1/KNX"
 
-license = "MIT"
+license = "Apache-2.0"
 
 keywords = [ "knx", "building-automation", "fieldbus", "protocol", "moonbit" ]
 

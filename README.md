@@ -2,6 +2,8 @@
 
 用 MoonBit 实现的 KNX 报文与数据点工具链。给楼宇总线一个不依赖网关厂商 SDK 的选择：帧、地址、数据点、设备模型，都可以直接编进程序。
 
+当前版本尚未发布到 mooncakes，接入方式为仓库源码或路径依赖。
+
 ![demo](docs/demo.gif)
 
 ```text
@@ -99,4 +101,4 @@ moon fmt --check
 
 ## 许可
 
-MIT，见 `LICENSE`。依据 KNX 公开标准（ISO/IEC 14543-3）的报文结构自行实现，无第三方代码。
+Apache-2.0，见 `LICENSE`。依据 KNX 公开标准（ISO/IEC 14543-3）的报文结构自行实现，无第三方代码。

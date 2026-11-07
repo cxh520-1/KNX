@@ -3,18 +3,28 @@
 ## 分层
 
 ```
-cmd → net → device → telegram → addrmodel
-                 └→ datapoint
-        busframe（只包在报文外面）
+cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
+ │        │                     └→ datapoint
+ │        └→ net ─→ device ─→ telegram / datapoint
+ ├→ project（独立，只做校验）
+ ├→ trace（只读解释）
+ └→ busframe（串口封装，只包在报文外面）
 ```
 
-- `addrmodel`：两种地址空间，字段宽度不同，不能互转。
-- `telegram`：TP1 标准帧与组服务。它不关心 DPT，只搬运 TPDU。
-- `datapoint`：把字节解释成值，以及反过来。
-- `device`：组对象表 + 读写行为，是总线与应用之间的边界。
-- `net`：虚拟总线，负责广播、收集应答、记录轨迹。
+- `addrmodel`：两种地址空间，字段宽度不同，越界在构造时失败。
+- `telegram`：TP1 标准帧与扩展帧、组服务。不认识数据点，只搬运 TPDU。
+- `datapoint`：字节与值互转，含百分比、场景等子类型。
+- `device`：组对象表与读写行为，是总线与应用的边界。
+- `net`：虚拟总线，广播、收集应答、记录轨迹、按组统计。
 - `busframe`：FT1.2 串口封装，只处理 `0x10` 转义与起止符。
-- `cmd`：输入输出，不含协议逻辑。
+- `cemi`：网关承载的 `L_Data.req/ind/con`，在 telegram 与网络之间。
+- `knxip`：KNX/IP 头与各服务体：发现、描述、连接、隧道、路由、设备管理、断开。
+- `gateway`：隧道客户端状态机，管理通道、序号、Ack、重发与入站应答。
+- `project`：组地址 ↔ DPT 工程表，解析、校验、合并、统计。
+- `trace`：把一帧解释成可读文本，不改变任何状态。
+- `cmd`：命令行，只做输入输出。
+
+依赖只能向下。`trace` 与 `project` 不依赖 `gateway`，`net` 不依赖 `knxip`，因此任何一层都能单独使用或替换。
 
 ## 报文结构
 
@@ -28,6 +38,8 @@ cmd → net → device → telegram → addrmodel
 | NPCI | 1 | bit7 目的类型（1=组），bit6-4 跳数，bit3-0 长度-1 |
 | TPDU | 1..16 | APCI 两字节 + 数据 |
 | 校验 | 1 | 控制到 TPDU 末字节的逐字节异或 |
+
+TPDU 超过 16 字节时改用扩展帧：控制字节 bit7 清零，多一个控制字节（bit7 目的类型、bit6-4 跳数），长度占满一字节，TPDU 最长 256 字节。
 
 FT1.2 再把整帧包成 `10 02 … 10 03`，正文中的 `0x10` 双写。
 
@@ -43,12 +55,19 @@ TPDU 前两字节是 APCI：
 
 解码时如果 TPDU 多于两字节，低 6 位就是后续字节数，并做一致性校验。
 
+## 网络与客户端
+
+`knxip` 只负责把服务体拼进六字节头或从帧里拆出来，不保存状态。`gateway` 才保存通道号、序号和未确认请求；它调用 `knxip` 生成帧，把「什么时候重发、什么时候断开」留给调用方。
+
+`cemi` 是两者的中间层：隧道与设备管理的正文都以 cEMI 开头，`gateway` 用它把 telegram 包进去。
+
 ## 为什么设备不认识总线
 
 `device` 只提供 `apply(telegram) -> Telegram?`：写返回空，读返回应答。总线负责把帧送到每个设备并收集结果。这样设备可以单独测试，也可以将来挂在真实 FT1.2 连接后面，而不需要改代码。
 
 ## 已知缺口
 
-- 扩展帧格式未实现；遇到扩展帧返回 `ExtendedFrame` 错误。
-- DPT-10（时间）、DPT-11（日期）、32 位整数与 4 字节浮点未实现。
-- 无 KNX Secure、无 ETS 工程导入、无总线仲裁时序模拟。
+- KNX Secure：安全封装与会话握手未实现。
+- ETS 工程导入：组地址由调用方配置，没有 `.knxproj` 解析。
+- 总线仲裁时序：虚拟总线只做逻辑投递。
+- 部分厂商自定义 DPT 未覆盖。
