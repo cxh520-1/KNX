@@ -91,6 +91,26 @@ fn demo() -> Unit {
   for frame in bus.frames {
     println("  " + spaced_hex(frame))
   }
+  let telegram = @telegram.Telegram::new(
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x81",
+  )
+  let message = @cemi.LData::from_telegram(@cemi.LDataRequest, telegram)
+  let cemi = message.encode() catch { _ => b"" }
+  let connect = @knxip.connect_request(
+    @knxip.Hpai::new(192, 168, 1, 10, 3671),
+    @knxip.Hpai::new(192, 168, 1, 10, 3672),
+  )
+  let tunnel = @knxip.tunnelling_request(1, 0, cemi.exact_view())
+  println("")
+  println("tunnel:")
+  println("  cEMI               " + spaced_hex(cemi))
+  println("  CONNECT_REQUEST    " + spaced_hex(connect))
+  println("  TUNNELLING_REQUEST " + spaced_hex(tunnel))
+  println("")
+  println("monitor:")
+  println("  " + @trace.describe(tunnel.exact_view()))
 }
 
 ///|

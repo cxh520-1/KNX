@@ -49,7 +49,7 @@ v0.1 交付一套单向分层的库，12 个包：
 
 ## 5. 当前基础与验收
 
-截至 2026 年 11 月 8 日：MoonBit 源码 4059 行（含测试），95 项测试通过，`moon check --deny-warn` 干净，`moon build --target wasm` 通过，30 余次真实提交，GitHub Actions 每次推送执行 check 与 test 且为绿。native 目标需要系统 C 编译器，当前环境未安装，未作验证。
+截至 2026 年 11 月 8 日：MoonBit 源码 4079 行（含测试），95 项测试通过，`moon check --deny-warn` 干净，`moon build --target wasm` 通过，30 余次真实提交，GitHub Actions 每次推送执行 check 与 test 且为绿。native 目标需要系统 C 编译器，当前环境未安装，未作验证。
 
 验收覆盖：地址越界、FT1.2 转义、标准/扩展帧往返与校验失败、组服务短值与长值、13 种 DPT 的字面编码、设备读写、总线统计、cEMI 互转、KNX/IP 各服务字段、客户端连接/发送/Ack/重发/断开、工程表重复检测。
 
