@@ -48,3 +48,16 @@
 | 虚拟总线广播与应答收集 | 可用 |
 | 活动轨迹与帧记录 | 可用 |
 | 电气层 / 仲裁时序 | 未实现 |
+
+## 网关与 KNX/IP
+
+| 能力 | 状态 | 位置 |
+|---|---|---|
+| cEMI L_Data.req / ind / con | 可用 | `cemi/cemi.mbt` |
+| cEMI 与 TP1 报文互转 | 可用 | 同上 |
+| KNX/IP 固定头（`06 10`，服务码，总长） | 可用 | `knxip/knxip.mbt` |
+| CONNECT_REQUEST / CONNECT_RESPONSE | 可用 | 同上 |
+| TUNNELLING_REQUEST / TUNNELLING_ACK | 可用 | 同上 |
+| HPAI（IPv4 + UDP 端口） | 可用 | 同上 |
+| SEARCH / DESCRIPTION 服务 | 未实现 | — |
+| 安全封装（SECURE_WRAPPER） | 未实现 | — |

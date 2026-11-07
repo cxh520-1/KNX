@@ -26,7 +26,9 @@ BC 11 01 11 01 81 00 81 BC
 | 数据点 | DPT-1 / 5 / 6 / 7 / 8 / 9 / 10 / 11 / 12 / 13 / 14 / 16 | 可用 |
 | 设备 | 组对象表、写入更新、读取应答 | 可用 |
 | 总线 | 虚拟总线：写广播、读收集应答、活动轨迹 | 可用 |
-| 工具 | `decode` / `demo` / `frames` / `soak` | 可用 |
+| 网关 | cEMI L_Data.req/ind/con，与 TP1 报文互转 | 可用 |
+| KNX/IP | 固定头、CONNECT_REQUEST/RESPONSE、TUNNELLING_REQUEST/ACK | 可用 |
+| 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` | 可用 |
 | 扩展帧 | 扩展帧格式 | 未实现 |
 | 安全 | KNX Secure | 未实现 |
 
@@ -39,6 +41,8 @@ moon run cmd -- demo
 moon run cmd -- decode "BC 11 01 11 01 81 00 81 BC"
 moon run cmd -- frames
 moon run cmd -- soak 200
+moon run cmd -- cemi "1100BC8011011101810081"
+moon run cmd -- tunnel
 ```
 
 `demo` 会在一台交换器、一盏灯、一个调光器和一个温度传感器之间跑一轮：开灯、读状态、调到 80、上报 21.5 °C，然后打印轨迹和经过总线的五条帧。
@@ -52,6 +56,8 @@ telegram/   TP1 报文与组服务
 datapoint/  DPT 编解码
 device/     组对象与读写行为
 net/        虚拟总线与轨迹
+cemi/       cEMI L_Data 与 TP1 互转
+knxip/      KNX/IP 头与隧道帧
 cmd/        命令行
 ```
 
@@ -68,7 +74,7 @@ cmd/        命令行
 ## 边界
 
 - 只做报文与设备模型，不做电气层、不做总线仲裁时序。
-- 扩展帧、DPT-10/11、32 位类型、KNX Secure 未实现。
+- 扩展帧格式、KNX Secure、ETS 工程导入未实现。
 - 没有 ETS 工程文件导入；组地址由调用方配置。
 
 见 [`docs/architecture.md`](docs/architecture.md) 与 [`docs/protocol.md`](docs/protocol.md)。
@@ -77,7 +83,7 @@ cmd/        命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 34 个用例
+moon test --deny-warn     # 43 个用例
 moon fmt --check
 ```
 
