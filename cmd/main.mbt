@@ -10,6 +10,8 @@ fn main {
     "demo" => demo()
     "frames" => frames()
     "soak" => soak(args)
+    "cemi" => cemi(args)
+    "tunnel" => tunnel()
     _ => usage()
   }
 }
@@ -22,6 +24,8 @@ fn usage() -> Unit {
   println("  knx demo           run the switch, lamp, dimmer and sensor demo")
   println("  knx frames         print the demo frames in FT1.2 form")
   println("  knx soak [n]       repeat the demo n times")
+  println("  knx cemi <hex>     decode a cEMI L_Data message")
+  println("  knx tunnel         build a connect and tunnelling request")
 }
 
 ///|
@@ -300,4 +304,63 @@ fn ga(text : String) -> @addrmodel.GroupAddress {
   @addrmodel.GroupAddress::parse(text) catch {
     _ => @addrmodel.GroupAddress::from_u16(0)
   }
+}
+
+///|
+fn cemi(args : Array[String]) -> Unit {
+  if args.length() < 3 {
+    println("usage: knx cemi <hex>")
+    return
+  }
+  let raw = bytes_of_hex(args[2])
+  let message = @cemi.LData::decode(raw.exact_view()) catch {
+    _ => {
+      println("error: not a cEMI L_Data message")
+      return
+    }
+  }
+  println("code        " + cemi_code(message.code))
+  println("control1    0x" + hex(bytes_of_byte(message.control1)))
+  println("control2    0x" + hex(bytes_of_byte(message.control2)))
+  println("source      " + message.source.to_text())
+  println("destination " + destination_text(message.to_telegram()))
+  println("tpdu        " + hex(message.tpdu))
+}
+
+///|
+fn tunnel() -> Unit {
+  let telegram = @telegram.Telegram::new(
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x81",
+  )
+  let message = @cemi.LData::from_telegram(@cemi.LDataRequest, telegram)
+  let cemi_bytes = message.encode() catch { _ => b"" }
+  let connect = @knxip.connect_request(
+    @knxip.Hpai::new(192, 168, 1, 10, 3671),
+    @knxip.Hpai::new(192, 168, 1, 10, 3672),
+  )
+  let tunnel_frame = @knxip.tunnelling_request(1, 0, cemi_bytes.exact_view())
+  println("cEMI")
+  println("  " + spaced_hex(cemi_bytes))
+  println("CONNECT_REQUEST")
+  println("  " + spaced_hex(connect))
+  println("TUNNELLING_REQUEST")
+  println("  " + spaced_hex(tunnel_frame))
+}
+
+///|
+fn cemi_code(code : @cemi.MessageCode) -> String {
+  match code {
+    @cemi.LDataRequest => "L_Data.req"
+    @cemi.LDataIndication => "L_Data.ind"
+    @cemi.LDataConfirmation => "L_Data.con"
+  }
+}
+
+///|
+fn bytes_of_byte(value : Int) -> Bytes {
+  let out = Buffer()
+  out.write_byte((value & 0xFF).to_byte())
+  out.to_bytes()
 }

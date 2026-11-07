@@ -6,6 +6,8 @@ import {
   "cxh520-1/knx/datapoint",
   "cxh520-1/knx/device",
   "cxh520-1/knx/net",
+  "cxh520-1/knx/cemi",
+  "cxh520-1/knx/knxip",
 }
 
 pkgtype(kind: "executable")
