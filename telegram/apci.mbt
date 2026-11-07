@@ -128,3 +128,11 @@ fn service_code(service : Service) -> Int {
   }
 }
 
+
+///|
+pub fn Apci::response_long(data : Bytes) -> Apci raise ApciError {
+  if data.length() < 1 || data.length() > 14 {
+    raise LengthMismatch(data.length(), 14)
+  }
+  { service: GroupResponse, value: Long(data) }
+}

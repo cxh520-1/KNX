@@ -16,11 +16,12 @@ pub(all) struct TraceEntry {
 pub(all) struct Bus {
   mut devices : Array[@device.Device]
   mut trace : Array[TraceEntry]
+  mut frames : Array[Bytes]
 } derive(Debug, Eq)
 
 ///|
 pub fn Bus::new() -> Bus {
-  { devices: [], trace: [] }
+  { devices: [], trace: [], frames: [] }
 }
 
 ///|
@@ -56,6 +57,9 @@ pub fn Bus::write(
     service: "write",
     value: value_text(value),
   })
+  self.frames.push(telegram.encode() catch {
+    _ => b""
+  })
   self.deliver(telegram)
 }
 
@@ -75,6 +79,9 @@ pub fn Bus::read(
     },
   )
   self.trace.push({ source, group, service: "read", value: "" })
+  self.frames.push(telegram.encode() catch {
+    _ => b""
+  })
   self.deliver(telegram)
 }
 
@@ -84,7 +91,12 @@ fn Bus::deliver(self : Bus, telegram : @telegram.Telegram) -> Array[@telegram.Te
   for device in self.devices {
     match device.apply(telegram) {
       None => ()
-      Some(answer) => answers.push(answer)
+      Some(answer) => {
+        answers.push(answer)
+        self.frames.push(answer.encode() catch {
+          _ => b""
+        })
+      }
     }
   }
   answers
