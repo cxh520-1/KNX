@@ -12,6 +12,8 @@ fn main {
     "soak" => soak(args)
     "cemi" => cemi(args)
     "tunnel" => tunnel()
+    "search" => search()
+    "device" => device()
     _ => usage()
   }
 }
@@ -26,6 +28,8 @@ fn usage() -> Unit {
   println("  knx soak [n]       repeat the demo n times")
   println("  knx cemi <hex>     decode a cEMI L_Data message")
   println("  knx tunnel         build a connect and tunnelling request")
+  println("  knx search         build a discovery request and response")
+  println("  knx device         build a device configuration request")
 }
 
 ///|
@@ -363,4 +367,55 @@ fn bytes_of_byte(value : Int) -> Bytes {
   let out = Buffer()
   out.write_byte((value & 0xFF).to_byte())
   out.to_bytes()
+}
+
+///|
+fn search() -> Unit {
+  let endpoint = @knxip.Hpai::new(192, 168, 1, 10, 3671)
+  let info : @knxip.DeviceInfo = {
+    medium: 0x02,
+    programming_mode: false,
+    address: ia("1.1.0"),
+    project_number: 0,
+    installation_number: 0,
+    serial: b"\x00\x11\x22\x33\x44\x55",
+    multicast: (224, 0, 23, 12),
+    mac: b"\x00\x11\x22\x33\x44\x55",
+    name: "KNX Gateway",
+  }
+  let families : @knxip.ServiceFamilies = {
+    families: [
+      { id: 0x02, version: 1, },
+      { id: 0x03, version: 1, },
+      { id: 0x04, version: 1, },
+      { id: 0x05, version: 1, },
+    ],
+  }
+  println("SEARCH_REQUEST")
+  println("  " + spaced_hex(@knxip.search_request(endpoint)))
+  println("SEARCH_RESPONSE")
+  println(
+    "  " +
+    spaced_hex(@knxip.search_response_with_families(endpoint, info, families)),
+  )
+}
+
+///|
+fn device() -> Unit {
+  let telegram = @telegram.Telegram::new(
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x81",
+  )
+  let message = @cemi.LData::from_telegram(@cemi.LDataRequest, telegram)
+  let cemi_bytes = message.encode() catch { _ => b"" }
+  println("DEVICE_CONFIGURATION_REQUEST")
+  println(
+    "  " +
+    spaced_hex(
+      @knxip.device_configuration_request(1, 0, cemi_bytes.exact_view()),
+    ),
+  )
+  println("DEVICE_CONFIGURATION_ACK")
+  println("  " + spaced_hex(@knxip.device_configuration_ack(1, 0, 0)))
 }
