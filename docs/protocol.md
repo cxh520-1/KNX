@@ -75,3 +75,14 @@
 | 重复组地址检测 | 可用 |
 | 未知 DPT 名称检测 | 可用 |
 | 表报告（条目数与逐行输出） | 可用 |
+## 隧道客户端
+
+| 能力 | 状态 |
+|---|---|
+| CONNECT_REQUEST 发起连接 | 可用 |
+| CONNECT_RESPONSE 打开通道、记录 channel | 可用 |
+| 发送 telegram（cEMI + TUNNELLING_REQUEST） | 可用 |
+| 序号分配与 Ack 匹配 | 可用 |
+| 未确认请求重发 | 可用 |
+| 入站 TUNNELLING_REQUEST 自动应答 | 可用 |
+| 超时判定 | 由调用方负责 |

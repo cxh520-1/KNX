@@ -29,6 +29,7 @@ BC 11 01 11 01 81 00 81 BC
 | 网关 | cEMI L_Data.req/ind/con，与 TP1 报文互转 | 可用 |
 | KNX/IP | 固定头、SEARCH/DESCRIPTION、CONNECT、TUNNELLING、ROUTING、设备管理 | 可用 |
 | 工程表 | 组地址 ↔ DPT 配置、重复与越界校验、报告 | 可用 |
+| 客户端 | 隧道状态机：连接、序号、Ack、重发、入站应答 | 可用 |
 | 工具 | `decode` / `demo` / `frames` / `soak` / `cemi` / `tunnel` / `search` / `device` / `plan` / `desc` | 可用 |
 | 扩展帧 | 扩展帧格式 | 未实现 |
 | 安全 | KNX Secure | 未实现 |
@@ -62,6 +63,7 @@ net/        虚拟总线与轨迹
 cemi/       cEMI L_Data 与 TP1 互转
 knxip/      KNX/IP 头、发现、隧道与路由帧
 project/    组地址 ↔ DPT 工程表
+gateway/    隧道客户端状态机
 cmd/        命令行
 ```
 
@@ -87,7 +89,7 @@ cmd/        命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 62 个用例
+moon test --deny-warn     # 68 个用例
 moon fmt --check
 ```
 
