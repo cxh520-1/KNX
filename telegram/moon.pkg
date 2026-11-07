@@ -1,3 +1,3 @@
 import {
-  "cxh520-1/knx/addrmodel" @addrmodel,
+  "cxh520-1/knx/addrmodel",
 }

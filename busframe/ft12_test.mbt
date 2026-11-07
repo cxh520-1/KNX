@@ -2,6 +2,7 @@
 // happens to contain 0x10 must survive the wire without being read as a
 // delimiter.
 
+///|
 test "wrap adds start and end" {
   let telegram = b"\xBC\x11\x01\x0A\x03\x81\x00\x81\x3A"
   let frame = wrap(telegram.exact_view())
@@ -11,6 +12,7 @@ test "wrap adds start and end" {
   assert_eq(frame[frame.length() - 1].to_int(), 0x03)
 }
 
+///|
 test "telegram containing 0x10 is doubled" {
   let telegram = b"\x10\x00\x10"
   let frame = wrap(telegram.exact_view())
@@ -20,6 +22,7 @@ test "telegram containing 0x10 is doubled" {
   assert_eq(frame[3].to_int(), 0x10)
 }
 
+///|
 test "unwrap recovers the telegram" {
   let telegram = b"\x10\x00\x10\x11"
   let frame = wrap(telegram.exact_view())
@@ -29,6 +32,7 @@ test "unwrap recovers the telegram" {
   assert_eq(back[3].to_int(), 0x11)
 }
 
+///|
 test "bad start is rejected" {
   let caught = try {
     ignore(unwrap(b"\x11\x02\x00\x10\x03".exact_view()))
@@ -40,6 +44,7 @@ test "bad start is rejected" {
   assert_true(caught)
 }
 
+///|
 test "stray escape inside the body is rejected" {
   let caught = try {
     ignore(unwrap(b"\x10\x02\x10\x01\x10\x03".exact_view()))

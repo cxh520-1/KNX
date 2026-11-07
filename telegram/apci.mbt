@@ -34,7 +34,7 @@ pub(all) struct Apci {
 
 ///|
 pub fn Apci::read() -> Apci {
-  { service: GroupRead, value: Short(0) }
+  { service: GroupRead, value: Short(0), }
 }
 
 ///|
@@ -42,7 +42,7 @@ pub fn Apci::write_short(value : Int) -> Apci raise ApciError {
   if value < 0 || value > 63 {
     raise LengthMismatch(value, 63)
   }
-  { service: GroupWrite, value: Short(value) }
+  { service: GroupWrite, value: Short(value), }
 }
 
 ///|
@@ -50,7 +50,7 @@ pub fn Apci::write_long(data : Bytes) -> Apci raise ApciError {
   if data.length() < 1 || data.length() > 14 {
     raise LengthMismatch(data.length(), 14)
   }
-  { service: GroupWrite, value: Long(data) }
+  { service: GroupWrite, value: Long(data), }
 }
 
 ///|
@@ -58,7 +58,7 @@ pub fn Apci::response_short(value : Int) -> Apci raise ApciError {
   if value < 0 || value > 63 {
     raise LengthMismatch(value, 63)
   }
-  { service: GroupResponse, value: Short(value) }
+  { service: GroupResponse, value: Short(value), }
 }
 
 ///|
@@ -101,13 +101,13 @@ pub fn Apci::decode(tpdu : BytesView) -> Apci raise ApciError {
   }
   let low = word & 0x3F
   if tpdu.length() == 2 {
-    { service, value: Short(low) }
+    { service, value: Short(low), }
   } else {
     let data = tpdu[2:tpdu.length()]
     if data.length() != low {
       raise LengthMismatch(data.length(), low)
     }
-    { service, value: Long(copy(data)) }
+    { service, value: Long(copy(data)), }
   }
 }
 
@@ -128,11 +128,10 @@ fn service_code(service : Service) -> Int {
   }
 }
 
-
 ///|
 pub fn Apci::response_long(data : Bytes) -> Apci raise ApciError {
   if data.length() < 1 || data.length() > 14 {
     raise LengthMismatch(data.length(), 14)
   }
-  { service: GroupResponse, value: Long(data) }
+  { service: GroupResponse, value: Long(data), }
 }

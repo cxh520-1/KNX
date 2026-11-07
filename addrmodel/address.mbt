@@ -19,15 +19,21 @@ pub(all) struct IndividualAddress {
 } derive(Debug, Eq)
 
 ///|
-pub fn IndividualAddress::new(area : Int, line : Int, device : Int) -> IndividualAddress raise AddressError {
+pub fn IndividualAddress::new(
+  area : Int,
+  line : Int,
+  device : Int,
+) -> IndividualAddress raise AddressError {
   check_range("area", area, 0, 15)
   check_range("line", line, 0, 15)
   check_range("device", device, 0, 255)
-  { area, line, device }
+  { area, line, device, }
 }
 
 ///|
-pub fn IndividualAddress::parse(text : String) -> IndividualAddress raise AddressError {
+pub fn IndividualAddress::parse(
+  text : String,
+) -> IndividualAddress raise AddressError {
   let (area, rest) = read_number(text, 0, "area")
   let (line, rest) = expect_separator(text, rest, '.', "line")
   let (device, rest) = expect_separator(text, rest, '.', "device")
@@ -53,7 +59,11 @@ pub fn IndividualAddress::from_u16(value : Int) -> IndividualAddress {
 
 ///|
 pub fn IndividualAddress::to_text(self : IndividualAddress) -> String {
-  self.area.to_string() + "." + self.line.to_string() + "." + self.device.to_string()
+  self.area.to_string() +
+  "." +
+  self.line.to_string() +
+  "." +
+  self.device.to_string()
 }
 
 ///|
@@ -65,11 +75,15 @@ pub(all) struct GroupAddress {
 } derive(Debug, Eq)
 
 ///|
-pub fn GroupAddress::new(main : Int, middle : Int, sub : Int) -> GroupAddress raise AddressError {
+pub fn GroupAddress::new(
+  main : Int,
+  middle : Int,
+  sub : Int,
+) -> GroupAddress raise AddressError {
   check_range("main", main, 0, 31)
   check_range("middle", middle, 0, 7)
   check_range("sub", sub, 0, 255)
-  { main, middle, sub }
+  { main, middle, sub, }
 }
 
 ///|
@@ -90,23 +104,40 @@ pub fn GroupAddress::to_u16(self : GroupAddress) -> Int {
 
 ///|
 pub fn GroupAddress::from_u16(value : Int) -> GroupAddress {
-  { main: (value >> 11) & 0x1F, middle: (value >> 8) & 0x07, sub: value & 0xFF }
+  {
+    main: (value >> 11) & 0x1F,
+    middle: (value >> 8) & 0x07,
+    sub: value & 0xFF,
+  }
 }
 
 ///|
 pub fn GroupAddress::to_text(self : GroupAddress) -> String {
-  self.main.to_string() + "/" + self.middle.to_string() + "/" + self.sub.to_string()
+  self.main.to_string() +
+  "/" +
+  self.middle.to_string() +
+  "/" +
+  self.sub.to_string()
 }
 
 ///|
-fn check_range(field : String, value : Int, low : Int, high : Int) -> Unit raise AddressError {
+fn check_range(
+  field : String,
+  value : Int,
+  low : Int,
+  high : Int,
+) -> Unit raise AddressError {
   if value < low || value > high {
     raise OutOfRange(field, value, high)
   }
 }
 
 ///|
-fn read_number(text : String, start : Int, field : String) -> (Int, Int) raise AddressError {
+fn read_number(
+  text : String,
+  start : Int,
+  field : String,
+) -> (Int, Int) raise AddressError {
   let mut index = start
   let mut value = 0
   let mut digits = 0

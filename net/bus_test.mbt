@@ -2,12 +2,23 @@
 // setup where a write has to reach more than one listener.
 
 ///|
-fn lamp(area_line_device : String, group : String) -> @device.Device raise @addrmodel.AddressError {
-  let device = @device.Device::new(@addrmodel.IndividualAddress::parse(area_line_device), "lamp")
-  device.add(@addrmodel.GroupAddress::parse(group), @datapoint.Dpt1, @datapoint.Bool(false))
+fn lamp(
+  area_line_device : String,
+  group : String,
+) -> @device.Device raise @addrmodel.AddressError {
+  let device = @device.Device::new(
+    @addrmodel.IndividualAddress::parse(area_line_device),
+    "lamp",
+  )
+  device.add(
+    @addrmodel.GroupAddress::parse(group),
+    @datapoint.Dpt1,
+    @datapoint.Bool(false),
+  )
   device
 }
 
+///|
 test "a write reaches every listener" {
   let bus = Bus::new()
   bus.attach(lamp("1.1.10", "2/2/2"))
@@ -25,6 +36,7 @@ test "a write reaches every listener" {
   assert_eq(bus.devices[1].value(group), Some(@datapoint.Bool(true)))
 }
 
+///|
 test "a read collects one answer per device" {
   let bus = Bus::new()
   bus.attach(lamp("1.1.12", "3/1/1"))
@@ -36,6 +48,7 @@ test "a read collects one answer per device" {
   assert_eq(answers.length(), 2)
 }
 
+///|
 test "a write to an unused group only leaves a trace" {
   let bus = Bus::new()
   bus.attach(lamp("1.1.14", "4/1/1"))

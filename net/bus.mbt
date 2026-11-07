@@ -21,7 +21,7 @@ pub(all) struct Bus {
 
 ///|
 pub fn Bus::new() -> Bus {
-  { devices: [], trace: [], frames: [] }
+  { devices: [], trace: [], frames: [], }
 }
 
 ///|
@@ -47,19 +47,10 @@ pub fn Bus::write(
     None => return []
     Some(apci) => apci
   }
-  let tpdu = apci.encode() catch {
-    _ => return []
-  }
+  let tpdu = apci.encode() catch { _ => return [] }
   let telegram = @telegram.Telegram::new(source, @telegram.Group(group), tpdu)
-  self.trace.push({
-    source,
-    group,
-    service: "write",
-    value: value_text(value),
-  })
-  self.frames.push(telegram.encode() catch {
-    _ => b""
-  })
+  self.trace.push({ source, group, service: "write", value: value_text(value), })
+  self.frames.push(telegram.encode() catch { _ => b"" })
   self.deliver(telegram)
 }
 
@@ -78,24 +69,23 @@ pub fn Bus::read(
       _ => b""
     },
   )
-  self.trace.push({ source, group, service: "read", value: "" })
-  self.frames.push(telegram.encode() catch {
-    _ => b""
-  })
+  self.trace.push({ source, group, service: "read", value: "", })
+  self.frames.push(telegram.encode() catch { _ => b"" })
   self.deliver(telegram)
 }
 
 ///|
-fn Bus::deliver(self : Bus, telegram : @telegram.Telegram) -> Array[@telegram.Telegram] {
+fn Bus::deliver(
+  self : Bus,
+  telegram : @telegram.Telegram,
+) -> Array[@telegram.Telegram] {
   let answers : Array[@telegram.Telegram] = []
   for device in self.devices {
     match device.apply(telegram) {
       None => ()
       Some(answer) => {
         answers.push(answer)
-        self.frames.push(answer.encode() catch {
-          _ => b""
-        })
+        self.frames.push(answer.encode() catch { _ => b"" })
       }
     }
   }
@@ -112,6 +102,21 @@ pub fn value_text(value : @datapoint.Value) -> String {
     @datapoint.U16(number) => number.to_string()
     @datapoint.I16(number) => number.to_string()
     @datapoint.F16(number) => number.to_string()
+    @datapoint.Time(time) =>
+      time.hour.to_string() +
+      ":" +
+      time.minute.to_string() +
+      ":" +
+      time.second.to_string()
+    @datapoint.Date(date) =>
+      date.year.to_string() +
+      "-" +
+      date.month.to_string() +
+      "-" +
+      date.day.to_string()
+    @datapoint.U32(number) => number.to_string()
+    @datapoint.I32(number) => number.to_string()
+    @datapoint.F32(number) => number.to_string()
     @datapoint.Text(text) => text
   }
 }
@@ -125,9 +130,7 @@ fn write_apci(
     @datapoint.Dpt1 =>
       match value {
         @datapoint.Bool(flag) => {
-          let apci = try {
-            Some(@telegram.Apci::write_short(if flag { 1 } else { 0 }))
-          } catch {
+          let apci = Some(@telegram.Apci::write_short(if flag { 1 } else { 0 })) catch {
             _ => None
           }
           apci
@@ -135,19 +138,11 @@ fn write_apci(
         _ => None
       }
     _ => {
-      let encoded = try {
-        Some(@datapoint.encode(dpt, value))
-      } catch {
-        _ => None
-      }
+      let encoded = Some(@datapoint.encode(dpt, value)) catch { _ => None }
       match encoded {
         None => None
         Some(data) => {
-          let apci = try {
-            Some(@telegram.Apci::write_long(data))
-          } catch {
-            _ => None
-          }
+          let apci = Some(@telegram.Apci::write_long(data)) catch { _ => None }
           apci
         }
       }

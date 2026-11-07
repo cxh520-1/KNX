@@ -39,7 +39,7 @@ pub fn Telegram::new(
   destination : Destination,
   tpdu : Bytes,
 ) -> Telegram {
-  { control: CONTROL_STANDARD, source, destination, tpdu }
+  { control: CONTROL_STANDARD, source, destination, tpdu, }
 }
 
 ///|
@@ -108,7 +108,7 @@ pub fn Telegram::decode(data : BytesView) -> Telegram raise TelegramError {
   } else {
     Individual(@addrmodel.IndividualAddress::from_u16(destination_word))
   }
-  { control, source, destination, tpdu: copy(tpdu) }
+  { control, source, destination, tpdu: copy(tpdu), }
 }
 
 ///|

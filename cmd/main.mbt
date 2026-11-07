@@ -4,11 +4,7 @@
 ///|
 fn main {
   let args = @env.args()
-  let command = if args.length() > 1 {
-    args[1]
-  } else {
-    "demo"
-  }
+  let command = if args.length() > 1 { args[1] } else { "demo" }
   match command {
     "decode" => decode(args)
     "demo" => demo()
@@ -31,21 +27,12 @@ fn usage() -> Unit {
 ///|
 fn demo() -> Unit {
   let bus = @net.Bus::new()
-  let switch = @device.Device::new(
-    ia("1.1.1"),
-    "switch",
-  )
+  let switch = @device.Device::new(ia("1.1.1"), "switch")
   let lamp = @device.Device::new(ia("1.1.10"), "lamp")
   lamp.add(ga("2/1/1"), @datapoint.Dpt1, @datapoint.Bool(false))
-  let dimmer = @device.Device::new(
-    ia("1.1.11"),
-    "dimmer",
-  )
+  let dimmer = @device.Device::new(ia("1.1.11"), "dimmer")
   dimmer.add(ga("2/1/2"), @datapoint.Dpt5, @datapoint.U8(0))
-  let sensor = @device.Device::new(
-    ia("1.1.12"),
-    "sensor",
-  )
+  let sensor = @device.Device::new(ia("1.1.12"), "sensor")
   sensor.add(ga("2/1/3"), @datapoint.Dpt9, @datapoint.F16(20.0))
   bus.attach(lamp)
   bus.attach(dimmer)
@@ -62,12 +49,7 @@ fn demo() -> Unit {
   )
   ignore(bus.read(switch.address, ga("2/1/1")))
   ignore(
-    bus.write(
-      switch.address,
-      ga("2/1/2"),
-      @datapoint.Dpt5,
-      @datapoint.U8(80),
-    ),
+    bus.write(switch.address, ga("2/1/2"), @datapoint.Dpt5, @datapoint.U8(80)),
   )
   ignore(
     bus.write(
@@ -100,10 +82,7 @@ fn demo() -> Unit {
 ///|
 fn frames() -> Unit {
   let bus = @net.Bus::new()
-  let switch = @device.Device::new(
-    ia("1.1.1"),
-    "switch",
-  )
+  let switch = @device.Device::new(ia("1.1.1"), "switch")
   let lamp = @device.Device::new(ia("1.1.10"), "lamp")
   lamp.add(ga("2/1/1"), @datapoint.Dpt1, @datapoint.Bool(false))
   bus.attach(lamp)
@@ -131,10 +110,7 @@ fn soak(args : Array[String]) -> Unit {
     100
   }
   let bus = @net.Bus::new()
-  let switch = @device.Device::new(
-    ia("1.1.1"),
-    "switch",
-  )
+  let switch = @device.Device::new(ia("1.1.1"), "switch")
   let lamp = @device.Device::new(ia("1.1.10"), "lamp")
   lamp.add(ga("2/1/1"), @datapoint.Dpt1, @datapoint.Bool(false))
   bus.attach(lamp)
@@ -148,7 +124,9 @@ fn soak(args : Array[String]) -> Unit {
       ),
     )
   }
-  println("writes=" + count.to_string() + " frames=" + bus.frames.length().to_string())
+  println(
+    "writes=" + count.to_string() + " frames=" + bus.frames.length().to_string(),
+  )
   println("last lamp state = " + show_value(lamp.value(ga("2/1/1"))))
 }
 
@@ -194,9 +172,7 @@ fn decode(args : Array[String]) -> Unit {
 
 ///|
 fn try_telegram(raw : Bytes) -> @telegram.Telegram? {
-  try {
-    Some(@telegram.Telegram::decode(raw.exact_view()))
-  } catch {
+  Some(@telegram.Telegram::decode(raw.exact_view())) catch {
     _ => None
   }
 }
@@ -262,11 +238,7 @@ fn spaced_hex(data : Bytes) -> String {
 
 ///|
 fn nibble(value : Int) -> Char {
-  Int::unsafe_to_char(if value < 10 {
-    value + 48
-  } else {
-    value + 55
-  })
+  Int::unsafe_to_char(if value < 10 { value + 48 } else { value + 55 })
 }
 
 ///|

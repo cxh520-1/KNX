@@ -2,21 +2,25 @@
 // write and its response produce for a boolean data point, which is the
 // smallest complete exchange on the bus.
 
+///|
 test "group write of true is two bytes" {
   let apci = Apci::write_short(1)
   assert_eq(hex_of(apci.encode()), "0081")
 }
 
+///|
 test "group read is the zero word" {
   assert_eq(hex_of(Apci::read().encode()), "0000")
 }
 
+///|
 test "group response decodes inline value" {
   let apci = Apci::decode(bytes_of_hex("0041"))
   assert_eq(apci.service, GroupResponse)
   assert_eq(apci.group_write_value(), Some(1))
 }
 
+///|
 test "long write carries a length and a payload" {
   let apci = Apci::write_long(bytes_of_hex("0064"))
   let encoded = apci.encode()
@@ -26,6 +30,7 @@ test "long write carries a length and a payload" {
   assert_eq(back.value, Long(bytes_of_hex("0064")))
 }
 
+///|
 test "telegram round trips with group destination" {
   let source = @addrmodel.IndividualAddress::parse("1.1.1")
   let destination = @addrmodel.GroupAddress::parse("1/2/3")
@@ -38,10 +43,15 @@ test "telegram round trips with group destination" {
   assert_eq(back.destination, Group(destination))
 }
 
+///|
 test "checksum mismatch is reported" {
   let source = @addrmodel.IndividualAddress::parse("1.1.1")
   let destination = @addrmodel.GroupAddress::parse("1/2/3")
-  let telegram = Telegram::new(source, Group(destination), Apci::read().encode())
+  let telegram = Telegram::new(
+    source,
+    Group(destination),
+    Apci::read().encode(),
+  )
   let encoded = telegram.encode()
   let corrupted = flip_last(encoded)
   let caught = try {

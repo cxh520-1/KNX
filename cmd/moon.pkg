@@ -1,11 +1,11 @@
 import {
-  "moonbitlang/core/env" @env,
-  "cxh520-1/knx/addrmodel" @addrmodel,
-  "cxh520-1/knx/telegram" @telegram,
-  "cxh520-1/knx/busframe" @busframe,
-  "cxh520-1/knx/datapoint" @datapoint,
-  "cxh520-1/knx/device" @device,
-  "cxh520-1/knx/net" @net,
+  "moonbitlang/core/env",
+  "cxh520-1/knx/addrmodel",
+  "cxh520-1/knx/telegram",
+  "cxh520-1/knx/busframe",
+  "cxh520-1/knx/datapoint",
+  "cxh520-1/knx/device",
+  "cxh520-1/knx/net",
 }
 
 pkgtype(kind: "executable")

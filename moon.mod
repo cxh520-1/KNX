@@ -8,7 +8,7 @@ repository = "https://github.com/cxh520-1/KNX"
 
 license = "MIT"
 
-keywords = ["knx", "building-automation", "fieldbus", "protocol", "moonbit"]
+keywords = [ "knx", "building-automation", "fieldbus", "protocol", "moonbit" ]
 
 description = "KNX telegram, address and data-point toolkit for MoonBit: FT1.2 framing, TP1 frames, DPT codecs and a virtual bus."
 

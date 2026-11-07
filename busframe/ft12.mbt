@@ -14,10 +14,13 @@ pub(all) suberror BusError {
 
 ///|
 pub const START : Int = 0x10
+
 ///|
 pub const START_KIND : Int = 0x02
+
 ///|
 pub const END : Int = 0x10
+
 ///|
 pub const END_KIND : Int = 0x03
 
