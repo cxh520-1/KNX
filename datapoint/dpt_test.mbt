@@ -197,3 +197,10 @@ test "percent subtype scales through the byte" {
   assert_eq(decode(Dpt5Percent, bytes_of_hex("FF").exact_view()), Percent(100))
   assert_eq(decode(Dpt5Percent, bytes_of_hex("80").exact_view()), Percent(50))
 }
+
+///|
+test "temperature helpers keep the value" {
+  assert_eq(temperature_to_value(21.5), F16(21.5))
+  assert_eq(value_to_temperature(F16(21.5)), Some(21.5))
+  assert_eq(value_to_temperature(U16(1)), None)
+}

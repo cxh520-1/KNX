@@ -152,3 +152,44 @@ fn write_apci(
     }
   }
 }
+
+///|
+/// Per-group counters derived from the trace.
+pub(all) struct GroupStats {
+  group : @addrmodel.GroupAddress
+  mut writes : Int
+  mut reads : Int
+} derive(Debug, Eq)
+
+///|
+pub fn Bus::stats(self : Bus) -> Array[GroupStats] {
+  let result : Array[GroupStats] = []
+  for entry in self.trace {
+    let mut found = -1
+    for index in 0..<result.length() {
+      if result[index].group == entry.group {
+        found = index
+      }
+    }
+    if found < 0 {
+      result.push({
+        group: entry.group,
+        writes: if entry.service == "write" {
+          1
+        } else {
+          0
+        },
+        reads: if entry.service == "read" {
+          1
+        } else {
+          0
+        },
+      })
+    } else if entry.service == "write" {
+      result[found].writes = result[found].writes + 1
+    } else {
+      result[found].reads = result[found].reads + 1
+    }
+  }
+  result
+}

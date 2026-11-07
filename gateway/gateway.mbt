@@ -21,6 +21,7 @@ pub(all) struct Gateway {
   mut awaiting : Int?
   mut last_cemi : Bytes
   mut log : Array[String]
+  mut lost : Int
 } derive(Debug, Eq)
 
 ///|
@@ -32,6 +33,7 @@ pub fn Gateway::new() -> Gateway {
     awaiting: None,
     last_cemi: b"",
     log: [],
+    lost: 0,
   }
 }
 
@@ -106,6 +108,9 @@ pub fn Gateway::on_frame(self : Gateway, frame : BytesView) -> Array[Bytes] {
         None => ()
       }
     }
+  } else if packet.service == @knxip.SERVICE_ROUTING_LOST_MESSAGE {
+    self.lost = self.lost + 1
+    self.log.push("routing lost")
   } else if packet.service == @knxip.SERVICE_TUNNELLING_REQUEST {
     if packet.body.length() >= 4 {
       let channel = packet.body[1].to_int()
@@ -115,4 +120,45 @@ pub fn Gateway::on_frame(self : Gateway, frame : BytesView) -> Array[Bytes] {
     }
   }
   replies
+}
+
+///|
+pub fn Gateway::state_name(self : Gateway) -> String {
+  match self.state {
+    Idle => "idle"
+    Connecting => "connecting"
+    Connected => "connected"
+    Closed => "closed"
+  }
+}
+
+///|
+pub fn Gateway::log_text(self : Gateway) -> String {
+  let mut out = ""
+  for line in self.log {
+    out = out + line + "\n"
+  }
+  out
+}
+
+///|
+/// Close the tunnel, returning the disconnect request for the transport.
+pub fn Gateway::disconnect(self : Gateway) -> Bytes? {
+  if self.state != Connected {
+    self.log.push("disconnect refused")
+    return None
+  }
+  self.state = Closed
+  self.log.push("disconnect")
+  Some(@knxip.disconnect_request(self.channel, @knxip.Hpai::new(0, 0, 0, 0, 0)))
+}
+
+///|
+pub fn Gateway::pending(self : Gateway) -> Int? {
+  self.awaiting
+}
+
+///|
+pub fn Gateway::channel_number(self : Gateway) -> Int {
+  self.channel
 }

@@ -62,3 +62,23 @@ test "a write to an unused group only leaves a trace" {
   assert_eq(bus.trace.length(), 1)
   assert_eq(bus.trace[0].service, "write")
 }
+
+///|
+test "stats count writes and reads per group" {
+  let bus = Bus::new()
+  bus.attach(lamp("1.1.15", "5/1/1"))
+  let group = @addrmodel.GroupAddress::parse("5/1/1")
+  ignore(
+    bus.write(
+      @addrmodel.IndividualAddress::parse("1.1.4"),
+      group,
+      @datapoint.Dpt1,
+      @datapoint.Bool(true),
+    ),
+  )
+  ignore(bus.read(@addrmodel.IndividualAddress::parse("1.1.4"), group))
+  let stats = bus.stats()
+  assert_eq(stats.length(), 1)
+  assert_eq(stats[0].writes, 1)
+  assert_eq(stats[0].reads, 1)
+}

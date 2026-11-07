@@ -192,3 +192,87 @@ fn substring(text : String, start : Int, end : Int) -> String {
   }
   out.to_string()
 }
+
+///|
+/// Merge another table, refusing any address that already exists.
+pub fn Table::merge(self : Table, other : Table) -> Table raise ProjectError {
+  let entries : Array[Entry] = []
+  for entry in self.entries {
+    entries.push(entry)
+  }
+  for entry in other.entries {
+    for existing in entries {
+      if existing.address == entry.address {
+        raise Duplicate(entry.address.to_text())
+      }
+    }
+    entries.push(entry)
+  }
+  { entries, }
+}
+
+///|
+/// Render the table back to the line format, so a parsed table can be edited
+/// and saved again.
+pub fn Table::to_text(self : Table) -> String {
+  let mut out = ""
+  for entry in self.entries {
+    out = out + entry.address.to_text() + " = " + dpt_code(entry.dpt)
+    if entry.name.length() > 0 {
+      out = out + " " + entry.name
+    }
+    out = out + "\n"
+  }
+  out
+}
+
+///|
+pub fn dpt_code(dpt : @datapoint.Dpt) -> String {
+  match dpt {
+    @datapoint.Dpt1 => "DPT1"
+    @datapoint.Dpt5 => "DPT5"
+    @datapoint.Dpt5Percent => "DPT5PCT"
+    @datapoint.Dpt6 => "DPT6"
+    @datapoint.Dpt7 => "DPT7"
+    @datapoint.Dpt8 => "DPT8"
+    @datapoint.Dpt9 => "DPT9"
+    @datapoint.Dpt10 => "DPT10"
+    @datapoint.Dpt11 => "DPT11"
+    @datapoint.Dpt12 => "DPT12"
+    @datapoint.Dpt13 => "DPT13"
+    @datapoint.Dpt14 => "DPT14"
+    @datapoint.Dpt16 => "DPT16"
+    @datapoint.Dpt17 => "DPT17"
+  }
+}
+
+///|
+/// Count entries per data point code, in first-seen order.
+pub fn Table::counts(self : Table) -> Array[(String, Int)] {
+  let result : Array[(String, Int)] = []
+  for entry in self.entries {
+    let code = dpt_code(entry.dpt)
+    let mut found = -1
+    for index in 0..<result.length() {
+      if result[index].0 == code {
+        found = index
+      }
+    }
+    if found < 0 {
+      result.push((code, 1))
+    } else {
+      result[found] = (code, result[found].1 + 1)
+    }
+  }
+  result
+}
+
+///|
+/// Addresses in table order, for callers that only need the keys.
+pub fn Table::addresses(self : Table) -> Array[@addrmodel.GroupAddress] {
+  let result : Array[@addrmodel.GroupAddress] = []
+  for entry in self.entries {
+    result.push(entry.address)
+  }
+  result
+}

@@ -63,3 +63,50 @@ test "empty table is refused" {
   }
   assert_true(caught)
 }
+
+///|
+test "merge refuses a shared address" {
+  let first = Table::parse("1/2/1 = DPT1 a")
+  let second = Table::parse("1/2/1 = DPT5 b")
+  let caught = try {
+    ignore(first.merge(second))
+    false
+  } catch {
+    ProjectError::Duplicate(_) => true
+    _ => false
+  }
+  assert_true(caught)
+}
+
+///|
+test "merged table keeps both entries" {
+  let first = Table::parse("1/2/1 = DPT1 a")
+  let second = Table::parse("1/2/2 = DPT5 b")
+  assert_eq(first.merge(second).size(), 2)
+}
+
+///|
+test "table renders back to its line format" {
+  let table = Table::parse("1/2/1 = DPT1 a\n1/2/2 = DPT9 温度\n")
+  let text = table.to_text()
+  assert_true(text.contains("1/2/1 = DPT1 a"))
+  assert_true(text.contains("1/2/2 = DPT9 温度"))
+  assert_eq(Table::parse(text).size(), 2)
+}
+
+///|
+test "counts group entries by data point" {
+  let table = Table::parse("1/2/1 = DPT1 a\n1/2/2 = DPT1 b\n1/2/3 = DPT9 c")
+  let counts = table.counts()
+  assert_eq(counts.length(), 2)
+  assert_eq(counts[0].0, "DPT1")
+  assert_eq(counts[0].1, 2)
+}
+
+///|
+test "addresses are returned in table order" {
+  let table = Table::parse("1/2/3 = DPT1 a\n1/2/1 = DPT1 b")
+  let addresses = table.addresses()
+  assert_eq(addresses.length(), 2)
+  assert_eq(addresses[0].to_text(), "1/2/3")
+}

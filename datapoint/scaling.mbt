@@ -17,3 +17,18 @@ pub fn raw_to_percent(raw : Int) -> Int raise DptError {
   }
   (raw * 100 + 127) / 255
 }
+
+///|
+/// A DPT-9 value is a temperature in hundredths of a degree; this exposes the
+/// conversion so a caller does not have to remember the scaling.
+pub fn temperature_to_value(celsius : Double) -> Value {
+  F16(celsius)
+}
+
+///|
+pub fn value_to_temperature(value : Value) -> Double? {
+  match value {
+    F16(celsius) => Some(celsius)
+    _ => None
+  }
+}
