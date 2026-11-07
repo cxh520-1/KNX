@@ -183,3 +183,17 @@ test "percent scaling rejects out of range" {
   }
   assert_true(caught)
 }
+
+///|
+test "scene packs number and store flag" {
+  assert_eq(hex_of(encode(Dpt17, Scene(5, true))), "85")
+  assert_eq(decode(Dpt17, bytes_of_hex("85").exact_view()), Scene(5, true))
+  assert_eq(decode(Dpt17, bytes_of_hex("05").exact_view()), Scene(5, false))
+}
+
+///|
+test "percent subtype scales through the byte" {
+  assert_eq(hex_of(encode(Dpt5Percent, Percent(100))), "FF")
+  assert_eq(decode(Dpt5Percent, bytes_of_hex("FF").exact_view()), Percent(100))
+  assert_eq(decode(Dpt5Percent, bytes_of_hex("80").exact_view()), Percent(50))
+}

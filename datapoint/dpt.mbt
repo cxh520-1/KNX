@@ -28,6 +28,8 @@ pub(all) enum Dpt {
   Dpt13
   Dpt14
   Dpt16
+  Dpt17
+  Dpt5Percent
 } derive(Debug, Eq)
 
 ///|
@@ -45,6 +47,8 @@ pub(all) enum Value {
   I32(Int64)
   F32(Double)
   Text(String)
+  Percent(Int)
+  Scene(Int, Bool)
 } derive(Debug, Eq)
 
 ///|
@@ -62,6 +66,8 @@ pub fn name(dpt : Dpt) -> String {
     Dpt13 => "DPT-13 32-bit signed"
     Dpt14 => "DPT-14 4-byte float"
     Dpt16 => "DPT-16 string"
+    Dpt17 => "DPT-17 scene"
+    Dpt5Percent => "DPT-5 percent"
   }
 }
 

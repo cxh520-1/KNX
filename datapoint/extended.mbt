@@ -27,6 +27,8 @@ pub fn encode(dpt : Dpt, value : Value) -> Bytes raise DptError {
     Dpt12 => encode_u32(value)
     Dpt13 => encode_i32(value)
     Dpt14 => encode_f32(value)
+    Dpt17 => encode_scene(value)
+    Dpt5Percent => encode_percent(value)
     _ => encode_base(dpt, value)
   }
 }
@@ -39,6 +41,8 @@ pub fn decode(dpt : Dpt, data : BytesView) -> Value raise DptError {
     Dpt12 => decode_u32(data)
     Dpt13 => decode_i32(data)
     Dpt14 => decode_f32(data)
+    Dpt17 => decode_scene(data)
+    Dpt5Percent => decode_percent(data)
     _ => decode_base(dpt, data)
   }
 }
