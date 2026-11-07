@@ -16,6 +16,7 @@ fn main {
     "device" => device()
     "plan" => plan()
     "desc" => desc()
+    "mon" => mon(args)
     _ => usage()
   }
 }
@@ -34,6 +35,7 @@ fn usage() -> Unit {
   println("  knx device         build a device configuration request")
   println("  knx plan           parse a sample group address table")
   println("  knx desc           build a description response")
+  println("  knx mon <hex>      explain a KNX/IP frame")
 }
 
 ///|
@@ -464,4 +466,13 @@ fn desc() -> Unit {
   }
   println("DESCRIPTION_RESPONSE")
   println("  " + spaced_hex(@knxip.description_response(endpoint, info)))
+}
+
+///|
+fn mon(args : Array[String]) -> Unit {
+  if args.length() < 3 {
+    println("usage: knx mon <hex>")
+    return
+  }
+  println(@trace.describe(bytes_of_hex(args[2]).exact_view()))
 }
