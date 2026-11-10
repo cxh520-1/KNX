@@ -1,25 +1,34 @@
-name: verify
+name: knx-verify
 
 on:
   push:
+    branches: [master]
   pull_request:
+    branches: [master]
+
+concurrency:
+  group: knx-verify-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  moonbit:
+  protocol:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install MoonBit
+      - name: Install MoonBit toolchain
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
-      - name: Toolchain
+      - name: Show toolchain
         run: moon version --all
 
-      - name: Check
+      - name: Type check
         run: moon check
 
-      - name: Test
+      - name: Unit tests
         run: moon test
+
+      - name: Build for wasm
+        run: moon build --target wasm

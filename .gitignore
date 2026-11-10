@@ -1,7 +1,19 @@
+# MoonBit build products
 _build/
 .mooncakes/
 target/
 *.wasm
 *.wat
+*.cmi
+*.cmo
+
+# editor and OS noise
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+
+# local captures and generated images from scripts/render_demo.py
+captures/
+docs/_*.png
+*.trace.log
