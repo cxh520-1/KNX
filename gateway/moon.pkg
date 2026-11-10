@@ -1,9 +1,0 @@
-import {
-  "cxh520-1/knx/telegram",
-  "cxh520-1/knx/cemi",
-  "cxh520-1/knx/knxip",
-}
-
-import {
-  "cxh520-1/knx/addrmodel",
-} for "test"

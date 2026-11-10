@@ -1,0 +1,5 @@
+import {
+  "cxh520-1/knx/lib/knxip",
+  "cxh520-1/knx/lib/cemi",
+  "cxh520-1/knx/lib/telegram",
+}

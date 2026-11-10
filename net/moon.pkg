@@ -1,6 +1,0 @@
-import {
-  "cxh520-1/knx/addrmodel",
-  "cxh520-1/knx/telegram",
-  "cxh520-1/knx/datapoint",
-  "cxh520-1/knx/device",
-}

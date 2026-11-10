@@ -1,15 +1,15 @@
 import {
   "moonbitlang/core/env",
-  "cxh520-1/knx/addrmodel",
-  "cxh520-1/knx/telegram",
-  "cxh520-1/knx/busframe",
-  "cxh520-1/knx/datapoint",
-  "cxh520-1/knx/device",
-  "cxh520-1/knx/net",
-  "cxh520-1/knx/cemi",
-  "cxh520-1/knx/knxip",
-  "cxh520-1/knx/project",
-  "cxh520-1/knx/trace",
+  "cxh520-1/knx/lib/addrmodel",
+  "cxh520-1/knx/lib/telegram",
+  "cxh520-1/knx/lib/busframe",
+  "cxh520-1/knx/lib/datapoint",
+  "cxh520-1/knx/lib/device",
+  "cxh520-1/knx/lib/net",
+  "cxh520-1/knx/lib/cemi",
+  "cxh520-1/knx/lib/knxip",
+  "cxh520-1/knx/lib/project",
+  "cxh520-1/knx/lib/trace",
 }
 
 pkgtype(kind: "executable")

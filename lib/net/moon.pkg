@@ -1,0 +1,6 @@
+import {
+  "cxh520-1/knx/lib/addrmodel",
+  "cxh520-1/knx/lib/telegram",
+  "cxh520-1/knx/lib/datapoint",
+  "cxh520-1/knx/lib/device",
+}

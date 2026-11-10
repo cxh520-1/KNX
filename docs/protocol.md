@@ -4,12 +4,12 @@
 
 | 能力 | 状态 | 位置 |
 |---|---|---|
-| TP1 标准帧编码/解码 | 可用 | `telegram/frame.mbt` |
+| TP1 标准帧编码/解码 | 可用 | `lib/telegram/frame.mbt` |
 | 控制字节校验 `(ctrl & 0x53) == 0x10` | 可用 | 同上 |
 | NPCI：组/个体、跳数、长度 | 可用 | 同上 |
 | 校验字节（逐字节异或） | 可用 | 同上 |
-| 扩展帧（长 TPDU） | 可用 | `telegram/frame.mbt` |
-| FT1.2 封装与 `0x10` 双写 | 可用 | `busframe/ft12.mbt` |
+| 扩展帧（长 TPDU） | 可用 | `lib/telegram/frame.mbt` |
+| FT1.2 封装与 `0x10` 双写 | 可用 | `lib/busframe/ft12.mbt` |
 
 ## 组服务
 
@@ -55,13 +55,13 @@
 
 | 能力 | 状态 | 位置 |
 |---|---|---|
-| cEMI L_Data.req / ind / con | 可用 | `cemi/cemi.mbt` |
+| cEMI L_Data.req / ind / con | 可用 | `lib/cemi/cemi.mbt` |
 | cEMI 与 TP1 报文互转 | 可用 | 同上 |
-| KNX/IP 固定头（`06 10`，服务码，总长） | 可用 | `knxip/knxip.mbt` |
+| KNX/IP 固定头（`06 10`，服务码，总长） | 可用 | `lib/knxip/knxip.mbt` |
 | CONNECT_REQUEST / CONNECT_RESPONSE | 可用 | 同上 |
 | TUNNELLING_REQUEST / TUNNELLING_ACK | 可用 | 同上 |
 | HPAI（IPv4 + UDP 端口） | 可用 | 同上 |
-| SEARCH_REQUEST / SEARCH_RESPONSE | 可用 | `knxip/knxip.mbt` |
+| SEARCH_REQUEST / SEARCH_RESPONSE | 可用 | `lib/knxip/knxip.mbt` |
 | DESCRIPTION_REQUEST | 可用 | 同上 |
 | ROUTING_INDICATION / ROUTING_BUSY | 可用 | 同上 |
 | 服务族 DIB（能力协商） | 可用 | 同上 |
