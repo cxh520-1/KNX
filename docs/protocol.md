@@ -9,7 +9,9 @@
 | NPCI：组/个体、跳数、长度 | 可用 | 同上 |
 | 校验字节（逐字节异或） | 可用 | 同上 |
 | 扩展帧（长 TPDU） | 可用 | `lib/telegram/frame.mbt` |
-| FT1.2 封装与 `0x10` 双写 | 可用 | `lib/busframe/ft12.mbt` |
+| FT1.2 变长帧 `68 L L 68 … 16`（SEND_UDAT，FCB/FCV） | 可用 | `lib/busframe/ft12.mbt` |
+| FT1.2 定长帧 `10 … 16`（SEND_RESET）与 ACK `E5` | 可用 | 同上 |
+| FT1.2 8 位算术和校验（模 256） | 可用 | 同上 |
 
 ## 组服务
 
@@ -65,7 +67,9 @@
 | DESCRIPTION_REQUEST | 可用 | 同上 |
 | ROUTING_INDICATION / ROUTING_BUSY | 可用 | 同上 |
 | 服务族 DIB（能力协商） | 可用 | 同上 |
-| DEVICE_CONFIGURATION_REQUEST / ACK | 可用 | 同上 |`r`n| DESCRIPTION_RESPONSE | 可用 | 同上 |`r`n| ROUTING_LOST_MESSAGE | 可用 | 同上 |
+| DEVICE_CONFIGURATION_REQUEST / ACK | 可用 | 同上 |
+| DESCRIPTION_RESPONSE | 可用 | 同上 |
+| ROUTING_LOST_MESSAGE | 可用 | 同上 |
 | 安全封装（SECURE_WRAPPER） | 未实现 | — |
 ## 工程表
 

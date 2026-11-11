@@ -129,7 +129,7 @@ fn frames() -> Unit {
     ),
   )
   for frame in bus.frames {
-    println(spaced_hex(frame))
+    println(spaced_hex(@busframe.wrap(frame.exact_view(), false)))
   }
 }
 

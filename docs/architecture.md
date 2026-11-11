@@ -16,7 +16,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 - `datapoint`：字节与值互转，含百分比、场景等子类型。
 - `device`：组对象表与读写行为，是总线与应用的边界。
 - `net`：虚拟总线，广播、收集应答、记录轨迹、按组统计。
-- `busframe`：FT1.2 串口封装，只处理 `0x10` 转义与起止符。
+- `busframe`：FT1.2 串口帧（PEI16/RS-232），做字符级定界、控制字段（FCB/FCV）与 8 位算术和校验。
 - `cemi`：网关承载的 `L_Data.req/ind/con`，在 telegram 与网络之间。
 - `knxip`：KNX/IP 头与各服务体：发现、描述、连接、隧道、路由、设备管理、断开。
 - `gateway`：隧道客户端状态机，管理通道、序号、Ack、重发与入站应答。
@@ -41,7 +41,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 
 TPDU 超过 16 字节时改用扩展帧：控制字节 bit7 清零，多一个控制字节（bit7 目的类型、bit6-4 跳数），长度占满一字节，TPDU 最长 256 字节。
 
-FT1.2 再把整帧包成 `10 02 … 10 03`，正文中的 `0x10` 双写。
+FT1.2 再把整帧包成变长帧 `68 L L 68 … 16`（SEND_UDAT），`L` 为控制字段加报文长度，末字节前是 8 位算术和校验（模 256）；定长帧 `10 … 16` 用于 SEND_RESET，确认用单字节 `E5`。
 
 ## 组服务编码
 
