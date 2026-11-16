@@ -31,6 +31,39 @@ test "reset and ack have the fixed wire form" {
 }
 
 ///|
+test "req_status has the fixed wire form" {
+  assert_eq(hex(req_status()), "10494916")
+}
+
+///|
+test "respond_udat builds a secondary user-data frame" {
+  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
+  assert_eq(
+    hex(respond_udat(telegram.exact_view())),
+    "680A0A6888BC11011101810081BC2616",
+  )
+}
+
+///|
+test "respond_udat round-trips through unwrap" {
+  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
+  let back = unwrap(respond_udat(telegram.exact_view()).exact_view())
+  assert_eq(hex(back), "BC11011101810081BC")
+}
+
+///|
+test "req_status is rejected as non-user-data" {
+  let caught = try {
+    ignore(unwrap(req_status().exact_view()))
+    false
+  } catch {
+    BusError::NotUserData(_) => true
+    _ => false
+  }
+  assert_true(caught)
+}
+
+///|
 test "reset round-trips through unwrap is rejected as non-user-data" {
   let caught = try {
     ignore(unwrap(reset().exact_view()))

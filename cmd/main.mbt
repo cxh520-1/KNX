@@ -87,10 +87,30 @@ fn demo() -> Unit {
   println("dimmer 2/1/2 = " + show_value(dimmer.value(ga("2/1/2"))))
   println("sensor 2/1/3 = " + show_value(sensor.value(ga("2/1/3"))))
   println("")
-  println("frames on the wire:")
+  println("telegrams on the bus (TP1):")
   for frame in bus.frames {
     println("  " + spaced_hex(frame))
   }
+  println("")
+  println("serial frames (FT1.2, PEI16/RS-232):")
+  println("  reset              " + spaced_hex(@busframe.reset()))
+  println("  ack                " + spaced_hex(@busframe.ack()))
+  println(
+    "  write  fcb=1       " +
+    spaced_hex(@busframe.wrap(bus.frames[0].exact_view(), true)),
+  )
+  println("  ack                " + spaced_hex(@busframe.ack()))
+  println(
+    "  read   fcb=0       " +
+    spaced_hex(@busframe.wrap(bus.frames[1].exact_view(), false)),
+  )
+  println("  ack                " + spaced_hex(@busframe.ack()))
+  println("  req_status         " + spaced_hex(@busframe.req_status()))
+  println(
+    "  respond            " +
+    spaced_hex(@busframe.respond_udat(bus.frames[2].exact_view())),
+  )
+  println("  ack                " + spaced_hex(@busframe.ack()))
   let telegram = @telegram.Telegram::new(
     ia("1.1.1"),
     @telegram.Group(ga("2/1/1")),

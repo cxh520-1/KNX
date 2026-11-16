@@ -16,7 +16,10 @@
 //   bit 6  PRM  1 = primary (initiating) station
 //   bit 5  FCB  frame count bit, toggled for each new send/confirm
 //   bit 4  FCV  frame count valid, always 1 for SEND_UDAT
-//   bit 3-0 function code: 0x0 = SEND_RESET, 0x3 = SEND_UDAT, 0x9 = REQ_STATUS
+//   bit 3-0 function code (primary): 0x0 = SEND_RESET, 0x3 = SEND_UDAT,
+//   0x9 = REQ_STATUS. The secondary station (PRM=0, DIR=1) keeps the same
+//   field layout but uses function codes 0x8 = RESPOND_UDAT and
+//   0xB = RESPOND_STATUS.
 
 ///|
 /// Framing failures.
@@ -47,6 +50,14 @@ pub const ACK : Int = 0xE5
 pub const SEND_RESET : Int = 0x40
 
 ///|
+/// Control field of a REQ_STATUS frame (primary, fixed length, no data).
+pub const REQ_STATUS : Int = 0x49
+
+///|
+/// Control field of a RESPOND_UDAT frame (secondary station, device to host).
+pub const RESPOND_UDAT : Int = 0x88
+
+///|
 /// Control field of a SEND_UDAT frame. FCB toggles for each new send/confirm
 /// and is 1 on the first frame after a reset.
 pub fn send_udat(fcb : Bool) -> Int {
@@ -60,7 +71,18 @@ pub fn send_udat(fcb : Bool) -> Int {
 ///|
 /// Wrap a telegram in a variable-length SEND_UDAT frame.
 pub fn wrap(telegram : BytesView, fcb : Bool) -> Bytes {
-  let control = send_udat(fcb)
+  frame(telegram, send_udat(fcb))
+}
+
+///|
+/// Wrap a telegram in a variable-length RESPOND_UDAT frame, the device-to-host
+/// counterpart of SEND_UDAT.
+pub fn respond_udat(telegram : BytesView) -> Bytes {
+  frame(telegram, RESPOND_UDAT)
+}
+
+///|
+fn frame(telegram : BytesView, control : Int) -> Bytes {
   let length = 1 + telegram.length()
   let out = Buffer()
   out.write_byte(START_VARIABLE.to_byte())
@@ -78,6 +100,12 @@ pub fn wrap(telegram : BytesView, fcb : Bool) -> Bytes {
 /// Build the reset-of-remote-link request: a fixed-length SEND_RESET frame.
 pub fn reset() -> Bytes {
   b"\x10\x40\x40\x16"
+}
+
+///|
+/// Build the request-status frame: a fixed-length REQ_STATUS frame.
+pub fn req_status() -> Bytes {
+  b"\x10\x49\x49\x16"
 }
 
 ///|
@@ -101,7 +129,9 @@ pub fn unwrap(frame : BytesView) -> Bytes raise BusError {
   } else {
     raise BadStart(first)
   }
-  if control != send_udat(false) && control != send_udat(true) {
+  if control != send_udat(false) &&
+    control != send_udat(true) &&
+    control != RESPOND_UDAT {
     raise NotUserData(control)
   }
   payload
