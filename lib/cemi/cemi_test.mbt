@@ -10,10 +10,10 @@ test "group write encodes to cemi" {
   )
   let cemi = LData::from_telegram(LDataRequest, telegram)
   let encoded = cemi.encode()
-  assert_eq(hex_of(encoded), "1100BC8011011101810081")
+  assert_eq(hex_of(encoded), "1100BCE011011101010081")
   let back = LData::decode(encoded.exact_view())
   assert_eq(back.code, LDataRequest)
-  assert_eq(back.control2, 0x80)
+  assert_eq(back.control2, 0xE0)
   assert_eq(back.to_telegram().destination, telegram.destination)
 }
 

@@ -27,7 +27,7 @@ KNX 是楼宇自动化的通用语言，但 MoonBit 生态里没有它的实现�
 moon run cmd -- demo
 moon run cmd -- decode "BC 11 01 11 01 81 00 81 BC"
 moon run cmd -- tunnel
-moon run cmd -- mon "061004200015040100001100BC8011011101810081"
+moon run cmd -- mon "061004200015040100001100BCE011011101010081"
 moon run cmd -- search
 moon run cmd -- device
 moon run cmd -- plan
@@ -61,10 +61,10 @@ cmd             命令行
 | 地址 | 个体地址 `1.2.3`、组地址 `1/2/3` | 可用 |
 | 报文 | TP1 标准帧与扩展帧（TPDU > 16 字节自动切换） | 可用 |
 | 服务 | GroupRead / GroupWrite / GroupResponse | 可用 |
-| 串口 | FT1.2 `68 L L 68 … 16`（SEND_UDAT / RESPOND_UDAT）/ `10 … 16`（SEND_RESET / REQ_STATUS）/ `E5`，算术和校验，FCB/FCV、DIR/PRM | 可用 |
+| 串口 | FT1.2 `68 L L 68 … 16`（SEND_UDAT / RESPOND_UDAT，承载 cEMI L_Data）/ `10 … 16`（SEND_RESET / REQ_STATUS）/ `E5`，算术和校验，FCB/FCV、DIR/PRM | 可用 |
 | 数据点 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，含百分比与场景 | 可用 |
 | 设备与总线 | 组对象、写更新、读应答、广播、按组统计 | 可用 |
-| 网关载荷 | cEMI `L_Data.req/ind/con` | 可用 |
+| EMI 消息层 | cEMI `L_Data.req/ind/con`（串口 FT1.2 与 KNX/IP 隧道共用） | 可用 |
 | KNX/IP | SEARCH/DESCRIPTION/CONNECT/TUNNELLING/ROUTING/设备管理/DISCONNECT | 可用 |
 | 客户端 | 连接、序号、Ack、重发、入站应答、断开 | 可用 |
 | 工程表 | 解析、重复检测、合并、反写、按 DPT 统计 | 可用 |
@@ -75,7 +75,7 @@ cmd             命令行
 
 ## 几处实现取舍
 
-**FT1.2 只做字符级帧规程。** 变长帧 `68 L L 68 … 16` 承载 SEND_UDAT（主站→从站）与 RESPOND_UDAT（从站→主站），定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`；校验是控制字段加数据字节的 8 位算术和（模 256），FCB 逐帧翻转抑制重复。这条规则只放在 `busframe`，其他层只看到报文。
+**FT1.2 只做字符级帧规程。** 变长帧 `68 L L 68 … 16` 承载 SEND_UDAT（主站→从站）与 RESPOND_UDAT（从站→主站），定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`；校验是控制字段加数据字节的 8 位算术和（模 256），FCB 逐帧翻转抑制重复。FT1.2 的载荷是一条 cEMI L_Data 消息（EMI 消息层），不是裸 TP1 帧；XOR 校验只出现在 TP1 帧，算术和校验只出现在 FT1.2，两层不重叠。这条规则只放在 `busframe`。
 
 **短值内联。** 组服务的低六位可以携带 0..63 的小值，也可以表示后续字节数；一条布尔写入因此只有两个字节的 TPDU。
 
@@ -85,7 +85,7 @@ cmd             命令行
 
 ## 边界与未实现
 
-- 只做报文与设备模型，不做电气层，不做总线仲裁时序；EMI 应用消息层未实现，FT1.2 只承载 TP1 报文本身。
+- 只做报文与设备模型，不做电气层，不做总线仲裁时序；EMI 管理服务（设备描述符、内存读写、个体地址服务）未实现，FT1.2 只承载 cEMI L_Data 报文。
 - KNX Secure、ETS 工程导入未实现；组地址由调用方配置。
 - native 目标需要系统 C 编译器，当前环境未安装；wasm-gc 可正常构建。
 

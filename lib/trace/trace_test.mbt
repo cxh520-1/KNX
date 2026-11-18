@@ -13,7 +13,7 @@ test "connect response is described" {
 
 ///|
 test "tunnelling request explains the telegram" {
-  let cemi = b"\x11\x00\xBC\x80\x11\x01\x11\x01\x81\x00\x81"
+  let cemi = b"\x11\x00\xBC\xE0\x11\x01\x11\x01\x01\x00\x81"
   let frame = @knxip.tunnelling_request(1, 0, cemi.exact_view())
   let text = describe(frame.exact_view())
   assert_true(text.contains("TUNNELLING_REQUEST"))
@@ -48,7 +48,7 @@ test "capture keeps the frame order" {
 ///|
 test "a bare cemi body can be described" {
   let text = describe_cemi(
-    b"\x11\x00\xBC\x80\x11\x01\x11\x01\x81\x00\x81".exact_view(),
+    b"\x11\x00\xBC\xE0\x11\x01\x11\x01\x01\x00\x81".exact_view(),
   )
   assert_true(text.contains("2/1/1 (group)"))
   assert_true(text.contains("GroupWrite"))

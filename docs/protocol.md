@@ -12,7 +12,10 @@
 | FT1.2 变长帧 `68 L L 68 … 16`（SEND_UDAT，FCB/FCV） | 可用 | `lib/busframe/ft12.mbt` |
 | FT1.2 定长帧 `10 … 16`（SEND_RESET）与 ACK `E5` | 可用 | 同上 |
 | FT1.2 8 位算术和校验（模 256） | 可用 | 同上 |
-| FT1.2 承载内容 | 完整 TP1 报文（EMI 应用消息层未实现） | `lib/busframe/ft12.mbt` |
+| FT1.2 载荷 | cEMI L_Data 消息（EMI 消息层，不是裸 TP1 帧） | `lib/busframe/ft12.mbt` |
+| cEMI L_Data 消息码 `11`/`29`/`2E`（req/ind/con） | 可用 | `lib/cemi/cemi.mbt` |
+| cEMI 控制字段 1/2、源/目的、长度与 TPDU | 可用 | 同上 |
+| cEMI 与 TP1 报文互转（去/加 XOR 校验） | 可用 | 同上 |
 
 ## 组服务
 

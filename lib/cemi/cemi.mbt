@@ -1,7 +1,8 @@
-// cEMI is what a KNX/IP gateway carries inside a tunnelling request: the
-// telegram plus a message code saying whether it is a request, an indication
-// or a confirmation. It is the bridge between the frame layer in this library
-// and a real network interface.
+// cEMI L_Data is the External Message Interface (EMI) message that a KNX
+// gateway carries: over FT1.2 on the PEI16 RS-232 link, and inside a KNXnet/IP
+// tunnelling request. It wraps the telegram with a message code (request,
+// indication, confirmation) and the addressing fields, but without the TP1 XOR
+// checksum, which the bus access unit adds when it transmits on the bus.
 
 ///|
 /// cEMI failures.
@@ -57,8 +58,8 @@ pub fn LData::from_telegram(
   telegram : @telegram.Telegram,
 ) -> LData {
   let control2 = match telegram.destination {
-    @telegram.Group(_) => 0x80
-    @telegram.Individual(_) => 0x00
+    @telegram.Group(_) => 0xE0
+    @telegram.Individual(_) => 0x60
   }
   {
     code,
@@ -81,11 +82,10 @@ pub fn LData::encode(self : LData) -> Bytes raise CemiError {
   if payload_length < 1 || payload_length > 16 {
     raise BadLength(payload_length)
   }
-  let (is_group, destination_word) = match self.destination {
-    @telegram.Group(address) => (true, address.to_u16())
-    @telegram.Individual(address) => (false, address.to_u16())
+  let destination_word = match self.destination {
+    @telegram.Group(address) => address.to_u16()
+    @telegram.Individual(address) => address.to_u16()
   }
-  let npci = (if is_group { 0x80 } else { 0x00 }) | (payload_length - 1)
   let out = Buffer()
   out.write_byte(self.code.code().to_byte())
   out.write_byte(0x00)
@@ -95,7 +95,7 @@ pub fn LData::encode(self : LData) -> Bytes raise CemiError {
   out.write_byte((self.source.to_u16() & 0xFF).to_byte())
   out.write_byte(((destination_word >> 8) & 0xFF).to_byte())
   out.write_byte((destination_word & 0xFF).to_byte())
-  out.write_byte(npci.to_byte())
+  out.write_byte((payload_length - 1).to_byte())
   out.write_bytes(self.tpdu.exact_view())
   out.to_bytes()
 }
@@ -119,9 +119,8 @@ pub fn LData::decode(data : BytesView) -> LData raise CemiError {
     (data[4].to_int() << 8) | data[5].to_int(),
   )
   let destination_word = (data[6].to_int() << 8) | data[7].to_int()
-  let npci = data[8].to_int()
-  let is_group = (npci & 0x80) != 0
-  let payload_length = (npci & 0x0F) + 1
+  let is_group = (control2 & 0x80) != 0
+  let payload_length = data[8].to_int() + 1
   if data.length() != 9 + payload_length {
     raise BadLength(data.length())
   }

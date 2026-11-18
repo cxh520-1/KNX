@@ -25,7 +25,7 @@ fn main {
 fn usage() -> Unit {
   println("knx - KNX telegram toolkit")
   println("")
-  println("  knx decode <hex>   decode a telegram or an FT1.2 frame")
+  println("  knx decode <hex>   decode a telegram, cemi message or FT1.2 frame")
   println("  knx demo           run the switch, lamp, dimmer and sensor demo")
   println("  knx frames         print the demo frames in FT1.2 form")
   println("  knx soak [n]       repeat the demo n times")
@@ -92,23 +92,41 @@ fn demo() -> Unit {
     println("  " + spaced_hex(frame))
   }
   println("")
+  let write_cemi = serial_frame(
+    @cemi.LDataRequest,
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x81",
+  )
+  let read_cemi = serial_frame(
+    @cemi.LDataRequest,
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x00",
+  )
+  let respond_cemi = serial_frame(
+    @cemi.LDataIndication,
+    ia("1.1.10"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x41",
+  )
   println("serial frames (FT1.2, PEI16/RS-232):")
   println("  reset              " + spaced_hex(@busframe.reset()))
   println("  ack                " + spaced_hex(@busframe.ack()))
   println(
     "  write  fcb=1       " +
-    spaced_hex(@busframe.wrap(bus.frames[0].exact_view(), true)),
+    spaced_hex(@busframe.wrap(write_cemi.exact_view(), true)),
   )
   println("  ack                " + spaced_hex(@busframe.ack()))
   println(
     "  read   fcb=0       " +
-    spaced_hex(@busframe.wrap(bus.frames[1].exact_view(), false)),
+    spaced_hex(@busframe.wrap(read_cemi.exact_view(), false)),
   )
   println("  ack                " + spaced_hex(@busframe.ack()))
   println("  req_status         " + spaced_hex(@busframe.req_status()))
   println(
     "  respond            " +
-    spaced_hex(@busframe.respond_udat(bus.frames[2].exact_view())),
+    spaced_hex(@busframe.respond_udat(respond_cemi.exact_view())),
   )
   println("  ack                " + spaced_hex(@busframe.ack()))
   let telegram = @telegram.Telegram::new(
@@ -135,22 +153,15 @@ fn demo() -> Unit {
 
 ///|
 fn frames() -> Unit {
-  let bus = @net.Bus::new()
-  let switch = @device.Device::new(ia("1.1.1"), "switch")
-  let lamp = @device.Device::new(ia("1.1.10"), "lamp")
-  lamp.add(ga("2/1/1"), @datapoint.Dpt1, @datapoint.Bool(false))
-  bus.attach(lamp)
-  ignore(
-    bus.write(
-      switch.address,
-      ga("2/1/1"),
-      @datapoint.Dpt1,
-      @datapoint.Bool(true),
-    ),
+  let cemi = serial_frame(
+    @cemi.LDataRequest,
+    ia("1.1.1"),
+    @telegram.Group(ga("2/1/1")),
+    b"\x00\x81",
   )
-  for frame in bus.frames {
-    println(spaced_hex(@busframe.wrap(frame.exact_view(), false)))
-  }
+  println("cEMI        " + spaced_hex(cemi))
+  println("FT1.2 fcb=0 " + spaced_hex(@busframe.wrap(cemi.exact_view(), false)))
+  println("FT1.2 fcb=1 " + spaced_hex(@busframe.wrap(cemi.exact_view(), true)))
 }
 
 ///|
@@ -193,21 +204,25 @@ fn decode(args : Array[String]) -> Unit {
   let raw = bytes_of_hex(args[2])
   let telegram = match try_telegram(raw) {
     Some(telegram) => telegram
-    None => {
-      let inner = @busframe.unwrap(raw.exact_view()) catch {
-        _ => {
-          println("error: not a telegram and not an FT1.2 frame")
-          return
-        }
-      }
-      match try_telegram(inner) {
+    None =>
+      match try_cemi(raw) {
         Some(telegram) => telegram
         None => {
-          println("error: frame body is not a telegram")
-          return
+          let inner = @busframe.unwrap(raw.exact_view()) catch {
+            _ => {
+              println("error: not a telegram, a cemi message or an FT1.2 frame")
+              return
+            }
+          }
+          match try_cemi(inner) {
+            Some(telegram) => telegram
+            None => {
+              println("error: FT1.2 body is not a cemi message")
+              return
+            }
+          }
         }
       }
-    }
   }
   println("source      " + telegram.source.to_text())
   println("destination " + destination_text(telegram))
@@ -228,6 +243,26 @@ fn decode(args : Array[String]) -> Unit {
 fn try_telegram(raw : Bytes) -> @telegram.Telegram? {
   Some(@telegram.Telegram::decode(raw.exact_view())) catch {
     _ => None
+  }
+}
+
+///|
+fn try_cemi(raw : Bytes) -> @telegram.Telegram? {
+  let message = @cemi.LData::decode(raw.exact_view()) catch { _ => return None }
+  Some(message.to_telegram())
+}
+
+///|
+fn serial_frame(
+  code : @cemi.MessageCode,
+  source : @addrmodel.IndividualAddress,
+  destination : @telegram.Destination,
+  tpdu : Bytes,
+) -> Bytes {
+  let telegram = @telegram.Telegram::new(source, destination, tpdu)
+  let message = @cemi.LData::from_telegram(code, telegram)
+  message.encode() catch {
+    _ => b""
   }
 }
 

@@ -1,27 +1,29 @@
 // FT1.2 tests pin the wire format against byte vectors from the KNX serial
-// data link: variable-length SEND_UDAT frames, the fixed-length reset, the
-// single-byte ACK, the arithmetic checksum and the FCB toggle.
+// data link: variable-length SEND_UDAT/RESPOND_UDAT frames, the fixed-length
+// reset and status requests, the single-byte ACK, the arithmetic checksum and
+// the FCB toggle. The payload is a cEMI L_Data message, which is what the
+// PEI16/RS-232 link actually carries, not a raw TP1 frame.
 
 ///|
-test "wrap builds a SEND_UDAT frame" {
-  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
-  let frame = wrap(telegram.exact_view(), false)
-  assert_eq(hex(frame), "680A0A6853BC11011101810081BCF116")
+test "wrap builds a SEND_UDAT frame around a cemi message" {
+  let message = cemi()
+  let frame = wrap(message.exact_view(), false)
+  assert_eq(hex(frame), "680C0C68531100BCE011011101010081A616")
 }
 
 ///|
 test "wrap toggles the FCB bit in the control field" {
-  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
-  let frame = wrap(telegram.exact_view(), true)
-  assert_eq(hex(frame), "680A0A6873BC11011101810081BC1116")
+  let message = cemi()
+  let frame = wrap(message.exact_view(), true)
+  assert_eq(hex(frame), "680C0C68731100BCE011011101010081C616")
 }
 
 ///|
-test "unwrap recovers the telegram" {
-  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
-  let frame = wrap(telegram.exact_view(), true)
+test "unwrap recovers the cemi message" {
+  let message = cemi()
+  let frame = wrap(message.exact_view(), true)
   let back = unwrap(frame.exact_view())
-  assert_eq(hex(back), "BC11011101810081BC")
+  assert_eq(hex(back), "1100BCE011011101010081")
 }
 
 ///|
@@ -37,18 +39,16 @@ test "req_status has the fixed wire form" {
 
 ///|
 test "respond_udat builds a secondary user-data frame" {
-  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
   assert_eq(
-    hex(respond_udat(telegram.exact_view())),
-    "680A0A6888BC11011101810081BC2616",
+    hex(respond_udat(cemi().exact_view())),
+    "680C0C68881100BCE011011101010081DB16",
   )
 }
 
 ///|
 test "respond_udat round-trips through unwrap" {
-  let telegram = b"\xBC\x11\x01\x11\x01\x81\x00\x81\xBC"
-  let back = unwrap(respond_udat(telegram.exact_view()).exact_view())
-  assert_eq(hex(back), "BC11011101810081BC")
+  let back = unwrap(respond_udat(cemi().exact_view()).exact_view())
+  assert_eq(hex(back), "1100BCE011011101010081")
 }
 
 ///|
@@ -64,7 +64,7 @@ test "req_status is rejected as non-user-data" {
 }
 
 ///|
-test "reset round-trips through unwrap is rejected as non-user-data" {
+test "reset is rejected as non-user-data" {
   let caught = try {
     ignore(unwrap(reset().exact_view()))
     false
@@ -80,7 +80,7 @@ test "bad checksum is rejected" {
   let caught = try {
     ignore(
       unwrap(
-        b"\x68\x0A\x0A\x68\x73\xBC\x11\x01\x11\x01\x81\x00\x81\xBC\x00\x16".exact_view(),
+        b"\x68\x0C\x0C\x68\x73\x11\x00\xBC\xE0\x11\x01\x11\x01\x01\x00\x81\x00\x16".exact_view(),
       ),
     )
     false
@@ -94,7 +94,7 @@ test "bad checksum is rejected" {
 ///|
 test "length mismatch is rejected" {
   let caught = try {
-    ignore(unwrap(b"\x68\x0A\x0A\x68\x73\xBC\x16".exact_view()))
+    ignore(unwrap(b"\x68\x0C\x0C\x68\x73\x11\x00\x16".exact_view()))
     false
   } catch {
     BusError::BadLength(_, _) => true
@@ -120,7 +120,7 @@ test "stray end marker is rejected" {
   let caught = try {
     ignore(
       unwrap(
-        b"\x68\x0A\x0A\x68\x73\xBC\x11\x01\x11\x01\x81\x00\x81\xBC\xF1\x15".exact_view(),
+        b"\x68\x0C\x0C\x68\x73\x11\x00\xBC\xE0\x11\x01\x11\x01\x01\x00\x81\xC6\x15".exact_view(),
       ),
     )
     false
@@ -129,6 +129,12 @@ test "stray end marker is rejected" {
     _ => false
   }
   assert_true(caught)
+}
+
+///|
+/// A cEMI L_Data.req carrying a GroupWrite true from 1.1.1 to group 2/1/1.
+fn cemi() -> Bytes {
+  b"\x11\x00\xBC\xE0\x11\x01\x11\x01\x01\x00\x81"
 }
 
 ///|

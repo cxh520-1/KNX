@@ -8,7 +8,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
  │        └→ net ─→ device ─→ telegram / datapoint
  ├→ project（独立，只做校验）
  ├→ trace（只读解释）
- └→ busframe（串口封装，只包在报文外面）
+ └→ busframe（FT1.2 串口封装，包在 cEMI L_Data 外面）
 ```
 
 - `addrmodel`：两种地址空间，字段宽度不同，越界在构造时失败。
@@ -16,8 +16,8 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 - `datapoint`：字节与值互转，含百分比、场景等子类型。
 - `device`：组对象表与读写行为，是总线与应用的边界。
 - `net`：虚拟总线，广播、收集应答、记录轨迹、按组统计。
-- `busframe`：FT1.2 串口帧（PEI16/RS-232），做字符级定界、控制字段（FCB/FCV、DIR/PRM）与 8 位算术和校验。
-- `cemi`：网关承载的 `L_Data.req/ind/con`，在 telegram 与网络之间。
+- `busframe`：FT1.2 串口帧（PEI16/RS-232），做字符级定界、控制字段（FCB/FCV、DIR/PRM）与 8 位算术和校验，载荷是 cEMI L_Data 消息。
+- `cemi`：EMI 消息层，`L_Data.req/ind/con` 编解码，串口 FT1.2 与 KNX/IP 隧道共用，在 telegram 与链路之间。
 - `knxip`：KNX/IP 头与各服务体：发现、描述、连接、隧道、路由、设备管理、断开。
 - `gateway`：隧道客户端状态机，管理通道、序号、Ack、重发与入站应答。
 - `project`：组地址 ↔ DPT 工程表，解析、校验、合并、统计。
@@ -41,7 +41,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 
 TPDU 超过 16 字节时改用扩展帧：控制字节 bit7 清零，多一个控制字节（bit7 目的类型、bit6-4 跳数），长度占满一字节，TPDU 最长 256 字节。
 
-FT1.2 再把整帧包成变长帧 `68 L L 68 … 16`（SEND_UDAT 主站→从站、RESPOND_UDAT 从站→主站），`L` 为控制字段加报文长度，末字节前是 8 位算术和校验（模 256）；定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`。
+cEMI L_Data 把 TP1 报文转成 EMI 消息：消息码 `11`/`29`/`2E` + 控制字段 1/2 + 源/目的 + 长度 + TPDU，不含 XOR 校验。FT1.2 再把这条 cEMI 消息包成变长帧 `68 L L 68 … 16`（SEND_UDAT 主站→从站、RESPOND_UDAT 从站→主站），`L` 为控制字段加 cEMI 长度，末字节前是 8 位算术和校验（模 256）；定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`。
 
 ## 组服务编码
 
@@ -68,7 +68,7 @@ TPDU 前两字节是 APCI：
 ## 已知缺口
 
 - KNX Secure：安全封装与会话握手未实现。
-- EMI 应用消息层（EMI1/EMI2 的设备管理消息语义）未实现；FT1.2 只承载 TP1 报文本身。
+- EMI 管理服务（设备描述符读取、内存读写、个体地址服务）未实现；FT1.2 只承载 cEMI L_Data 报文。
 - ETS 工程导入：组地址由调用方配置，没有 `.knxproj` 解析。
 - 总线仲裁时序：虚拟总线只做逻辑投递。
 - 部分厂商自定义 DPT 未覆盖。
