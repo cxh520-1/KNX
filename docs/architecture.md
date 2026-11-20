@@ -41,7 +41,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 
 TPDU 超过 16 字节时改用扩展帧：控制字节 bit7 清零，多一个控制字节（bit7 目的类型、bit6-4 跳数），长度占满一字节，TPDU 最长 256 字节。
 
-cEMI L_Data 把 TP1 报文转成 EMI 消息：消息码 `11`/`29`/`2E` + 控制字段 1/2 + 源/目的 + 长度 + TPDU，不含 XOR 校验。FT1.2 再把这条 cEMI 消息包成变长帧 `68 L L 68 … 16`（SEND_UDAT 主站→从站、RESPOND_UDAT 从站→主站），`L` 为控制字段加 cEMI 长度，末字节前是 8 位算术和校验（模 256）；定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`。
+cEMI L_Data 把 TP1 报文转成 EMI 消息：消息码 `11`/`29`/`2E` + 控制字段 1/2 + 源/目的 + 长度 + TPDU，不含 XOR 校验。FT1.2 再把这条 cEMI 消息包成变长帧 `68 L L 68 … 16`（SEND_UDAT，两个方向都用它、DIR 位区分：主机→设备 `53/73`，设备→主机 `D3/F3`），`L` 为控制字段加 cEMI 长度，末字节前是 8 位算术和校验（模 256）；定长帧 `10 … 16` 用于 SEND_RESET、REQ_STATUS 与 RESPOND_STATUS，确认用单字节 `E5`。
 
 ## 组服务编码
 

@@ -123,10 +123,9 @@ fn demo() -> Unit {
     spaced_hex(@busframe.wrap(read_cemi.exact_view(), false)),
   )
   println("  ack                " + spaced_hex(@busframe.ack()))
-  println("  req_status         " + spaced_hex(@busframe.req_status()))
   println(
-    "  respond            " +
-    spaced_hex(@busframe.respond_udat(respond_cemi.exact_view())),
+    "  respond fcb=1      " +
+    spaced_hex(@busframe.respond_udat(respond_cemi.exact_view(), true)),
   )
   println("  ack                " + spaced_hex(@busframe.ack()))
   let telegram = @telegram.Telegram::new(

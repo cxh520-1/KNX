@@ -33,7 +33,7 @@ moon run cmd -- device
 moon run cmd -- plan
 ```
 
-`demo` 走完一条完整链路：三台设备的总线交互 → 五条 TP1 帧 → 同一条帧的 FT1.2 串口收发（reset/ack、SEND_UDAT、REQ_STATUS、RESPOND_UDAT）→ 包成 cEMI 与 KNX/IP 隧道请求 → 监控器解释成一行。`frames` 只打印 FT1.2 串口帧，`plan` 解析样例工程表，`search` 与 `device` 打印发现和设备管理帧。
+`demo` 走完一条完整链路：三台设备的总线交互 → 五条 TP1 帧 → 同一条帧的 FT1.2 串口双向收发（reset/ack、SEND_UDAT 双向、REQ_STATUS/RESPOND_STATUS）→ 包成 cEMI 与 KNX/IP 隧道请求 → 监控器解释成一行。`frames` 只打印 FT1.2 串口帧，`plan` 解析样例工程表，`search` 与 `device` 打印发现和设备管理帧。
 
 ## 包的划分
 
@@ -61,7 +61,7 @@ cmd             命令行
 | 地址 | 个体地址 `1.2.3`、组地址 `1/2/3` | 可用 |
 | 报文 | TP1 标准帧与扩展帧（TPDU > 16 字节自动切换） | 可用 |
 | 服务 | GroupRead / GroupWrite / GroupResponse | 可用 |
-| 串口 | FT1.2 `68 L L 68 … 16`（SEND_UDAT / RESPOND_UDAT，承载 cEMI L_Data）/ `10 … 16`（SEND_RESET / REQ_STATUS）/ `E5`，算术和校验，FCB/FCV、DIR/PRM | 可用 |
+| 串口 | FT1.2 `68 L L 68 … 16`（SEND_UDAT 双向，DIR 区分方向，承载 cEMI L_Data）/ `10 … 16`（SEND_RESET / REQ_STATUS / RESPOND_STATUS）/ `E5`，算术和校验，FCB/FCV、DIR/PRM | 可用 |
 | 数据点 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，含百分比与场景 | 可用 |
 | 设备与总线 | 组对象、写更新、读应答、广播、按组统计 | 可用 |
 | EMI 消息层 | cEMI `L_Data.req/ind/con`（串口 FT1.2 与 KNX/IP 隧道共用） | 可用 |
@@ -75,7 +75,7 @@ cmd             命令行
 
 ## 几处实现取舍
 
-**FT1.2 只做字符级帧规程。** 变长帧 `68 L L 68 … 16` 承载 SEND_UDAT（主站→从站）与 RESPOND_UDAT（从站→主站），定长帧 `10 … 16` 用于 SEND_RESET 与 REQ_STATUS，确认用单字节 `E5`；校验是控制字段加数据字节的 8 位算术和（模 256），FCB 逐帧翻转抑制重复。FT1.2 的载荷是一条 cEMI L_Data 消息（EMI 消息层），不是裸 TP1 帧；XOR 校验只出现在 TP1 帧，算术和校验只出现在 FT1.2，两层不重叠。这条规则只放在 `busframe`。
+**FT1.2 只做字符级帧规程。** 变长帧 `68 L L 68 … 16` 承载 SEND_UDAT，两个方向都用它、只靠 DIR 位区分（主机→设备 `53/73`，设备→主机 `D3/F3`），定长帧 `10 … 16` 用于 SEND_RESET、REQ_STATUS 与 RESPOND_STATUS，确认用单字节 `E5`；校验是控制字段加数据字节的 8 位算术和（模 256），FCB 逐帧翻转抑制重复。FT1.2 的载荷是一条 cEMI L_Data 消息（EMI 消息层），不是裸 TP1 帧；XOR 校验只出现在 TP1 帧，算术和校验只出现在 FT1.2，两层不重叠。这条规则只放在 `busframe`。
 
 **短值内联。** 组服务的低六位可以携带 0..63 的小值，也可以表示后续字节数；一条布尔写入因此只有两个字节的 TPDU。
 
@@ -95,12 +95,12 @@ cmd             命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 103 个用例
+moon test --deny-warn     # 104 个用例
 moon fmt --check
 moon build --target wasm
 ```
 
-CI 在每次推送时跑 `moon check`、`moon test` 与 wasm 构建。测试覆盖地址越界、标准/扩展帧往返、校验失败、FT1.2 帧校验、FCB 翻转与 SEND_UDAT/RESPOND_UDAT 双向收发、13 种 DPT 的字面编码、设备读写、总线统计、cEMI 互转、KNX/IP 各服务字段与客户端状态机。
+CI 在每次推送时跑 `moon check`、`moon test` 与 wasm 构建。测试覆盖地址越界、标准/扩展帧往返、校验失败、FT1.2 帧校验、FCB 翻转与 SEND_UDAT 双向收发、13 种 DPT 的字面编码、设备读写、总线统计、cEMI 互转、KNX/IP 各服务字段与客户端状态机。
 
 ## 许可证
 

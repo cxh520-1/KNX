@@ -12,7 +12,7 @@
 
 ## 项目简介
 
-KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 4716 行（含 1373 行测试；有效代码 3343 行），103 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
+KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 4755 行（含 1383 行测试；有效代码 3372 行），104 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
 
 ## 使用场景
 
@@ -23,7 +23,7 @@ KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关
 ## 核心功能范围
 
 - 提供个体地址与组地址模型，字段宽度不同，越界在构造时失败；
-- 提供 FT1.2 串口帧编解码：变长 SEND_UDAT 帧 `68 L L 68 … 16`（主站→从站）与 RESPOND_UDAT 帧（从站→主站）、定长 SEND_RESET `10 40 40 16` 与 REQ_STATUS `10 49 49 16`、单字节 ACK `E5`，8 位算术和校验、FCB/FCV 与 DIR/PRM 控制字段，字节与真实 KNX 串口（PEI16/RS-232）一致；
+- 提供 FT1.2 串口帧编解码：变长 SEND_UDAT 帧 `68 L L 68 … 16` 双向收发（DIR=0 主机→设备、DIR=1 设备→主机）、定长 SEND_RESET `10 40 40 16`、REQ_STATUS `10 49 49 16` 与 RESPOND_STATUS `10 8B … 16`、单字节 ACK `E5`，8 位算术和校验、FCB/FCV 与 DIR/PRM 控制字段，字节与真实 KNX 串口（PEI16/RS-232）一致；
 - 提供 cEMI L_Data 消息层（EMI 标准接口）：`L_Data.req/ind/con` 编解码，与 TP1 报文互转，是 FT1.2 串口与 KNX/IP 隧道共同承载的消息格式；
 - 提供 TP1 标准帧与扩展帧，覆盖控制字段、源/目的地址、NPCI、XOR 校验，TPDU 超过 16 字节自动切换布局；
 - 提供 GroupRead、GroupWrite、GroupResponse 三种组服务，支持短值内联与长值带长度；
@@ -35,7 +35,7 @@ KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关
 - 提供组地址工程表的解析、重复检测、合并、反写与按 DPT 统计；
 - 提供单帧解释与抓包逐帧渲染的监控模块；
 - 提供 CLI，包含 `decode`、`demo`、`frames`、`cemi`、`tunnel`、`search`、`device`、`plan`、`desc`、`mon`；
-- 提供 103 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
+- 提供 104 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
 - 提供 README 与 `docs/` 示例，覆盖总线演示、隧道组帧和监控输出。
 
 ## 标准互操作机制
@@ -44,8 +44,8 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 
 - **链路形态**：点对点 RS-232 串口，FT1.2 模式线参数为 19200 bit/s、8 数据位、偶校验、1 停止位（8E1），区别于旧 PEI16 模式的 9600 8N1 加 RTS/CTS 硬件流控；库为 sans-IO，只产/消字节，线参数由调用方在打开 UART 时配置，因此同一套帧可直接连 PEI16 耦合器（BCU2）或 EMI 串口网关。
 - **帧结构**（IEC 870-5-1 FT1.2 字符规程）：变长帧 `68 L L 68 C [数据] CS 16`、定长帧 `10 C [数据] CS 16`、单字节确认 `E5`；`CS` 为控制字段与数据字节的 8 位算术和（模 256）。载荷 `[数据]` 是一条 cEMI L_Data 消息，不是裸 TP1 帧。
-- **控制字段**：`DIR|PRM|FCB|FCV|功能码(4 位)`。主站发送 SEND_UDAT 功能码 0x3、FCV=1，FCB 每条新报文翻转（复位后首帧为 1），用于抑制报文丢失/重复；SEND_RESET 功能码 0x0。从站以 `E5` 确认。
-- **握手与收发**：上电先 `reset()` 发 `10 40 40 16` → 对方回 `E5` → 以 `wrap(cemi, fcb)` 把 cEMI L_Data 消息包成 SEND_UDAT（主站→从站），FCB 逐帧翻转；从站侧数据用 `respond_udat(cemi)` 以 RESPOND_UDAT 帧回传，主站以 `req_status()` 发 `10 49 49 16` 轮询。`unwrap(frame)` 同时接受 SEND_UDAT 与 RESPOND_UDAT，校验定界、长度与算术和，错误时报 `BadStart/BadEnd/BadLength/BadChecksum`，非数据帧报 `NotUserData`。
+- **控制字段**：`DIR|PRM|FCB|FCV|功能码(4 位)`。KNX 的 FT1.2 是平衡模式：两个方向都用 SEND_UDAT（功能码 0x3、FCV=1），只靠 DIR 位区分方向——主机→设备为 `53`/`73`（FCB 0/1），设备→主机为 `D3`/`F3`（FCB 0/1），FCB 各自独立翻转，用于抑制报文丢失/重复；SEND_RESET 功能码 0x0、REQ_STATUS 功能码 0x9、RESPOND_STATUS 功能码 0xB。每帧以 `E5` 确认。
+- **双向收发**：上电先 `reset()` 发 `10 40 40 16` → 对方回 `E5`；主机以 `wrap(cemi, fcb)` 把 cEMI L_Data 消息包成 SEND_UDAT（DIR=0）发送，设备以 `respond_udat(cemi, fcb)` 把回传消息包成 SEND_UDAT（DIR=1）发回，两组 FCB 各自逐帧翻转。`unwrap(frame)` 同时接受两个方向的 SEND_UDAT，校验定界、长度与算术和，错误时报 `BadStart/BadEnd/BadLength/BadChecksum`，非数据帧报 `NotUserData`；`req_status()`/`respond_status(status)` 提供链路状态查询。
 - **消息转换边界**：TP1 帧（总线物理层，含 XOR 校验，由 BCU 收发时计算/校验）⇄ cEMI L_Data（EMI 消息层，消息码 + 控制字段 + 源/目的 + 长度 + TPDU，不含 XOR）⇄ FT1.2（串口链路层，加定界与算术和）。`telegram` 层管 TP1 帧，`cemi` 层管 EMI 消息，`busframe` 层管 FT1.2 定界；XOR 校验只在 `telegram` 层出现，算术和校验只在 `busframe` 层出现，两个校验不重叠。
 
 ## 最终标准符合性目标
@@ -54,7 +54,7 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 
 | 协议层 | 符合的标准 | 本库实现并测试的范围 |
 |---|---|---|
-| FT1.2 串口数据链路 | IEC 870-5-1 子集，经 KNX 系统规范 Volume 3/3「物理外部接口（PEI16/RS-232）」采用 | 变长 SEND_UDAT / RESPOND_UDAT `68 L L 68 … 16`、定长 SEND_RESET `10 40 40 16`、定长 REQ_STATUS `10 49 49 16`、单字节 ACK `E5`、8 位算术和校验（模 256）、DIR/PRM/FCB/FCV 控制字段；载荷为 cEMI L_Data 消息；线参数 19200 8E1 |
+| FT1.2 串口数据链路 | IEC 870-5-1 子集，经 KNX 系统规范 Volume 3/3「物理外部接口（PEI16/RS-232）」采用 | 变长 SEND_UDAT `68 L L 68 … 16` 双向（DIR=0 主机→设备、DIR=1 设备→主机）、定长 SEND_RESET `10 40 40 16`、定长 REQ_STATUS `10 49 49 16`、定长 RESPOND_STATUS `10 8B … 16`、单字节 ACK `E5`、8 位算术和校验（模 256）、DIR/PRM/FCB/FCV 控制字段；载荷为 cEMI L_Data 消息；线参数 19200 8E1 |
 | EMI 消息层（cEMI L_Data） | KNX 系统规范（External Message Interface） | L_Data.req / ind / con 编解码，消息码 `11`/`29`/`2E`，控制字段 1/2、源/目的地址、长度与 TPDU，与 TP1 报文互转 |
 | TP1 数据链路帧 | ISO/IEC 14543-3-2 | 标准帧与扩展帧、控制字节校验 `(ctrl & 0x53) == 0x10`、源/目的地址、NPCI、逐字节 XOR 校验 |
 | 组服务 | KNX 系统规范（TP1 应用层） | GroupRead / GroupWrite / GroupResponse，短值内联与长值长度 |
@@ -87,25 +87,24 @@ FT1.2 帧的校验字节为 `0xC6`：`0x73 + 0x11 + 0x00 + 0xBC + 0xE0 + 0x11 + 
 
 ## 实际帧交互案例
 
-上面的表是单向编码链；下面是一次完整串口交互，展示主站（外部设备）与从站（PEI16 耦合器/BCU2）之间的请求与应答。以下字节均由 `moon run cmd -- demo` 真实打印（见 `docs/demo.txt`），方向一栏以主站视角描述。
+上面的表是单向编码链；下面是一次完整串口交互，展示主机（外部设备）与设备（PEI16 耦合器/BCU2）之间的双向收发。以下字节均由 `moon run cmd -- demo` 真实打印（见 `docs/demo.txt`），方向一栏以主机视角描述。
 
 | 步骤 | 方向 | 帧 | 字节 |
 |---|---|---|---|
-| 复位链路 | 主站 → 从站 | SEND_RESET（定长帧，功能码 0x0） | `10 40 40 16` |
-| 确认 | 从站 → 主站 | 单字节 ACK | `E5` |
-| 写布尔真 | 主站 → 从站 | SEND_UDAT（FCB=1）承载 L_Data.req GroupWrite | `68 0C 0C 68 73 11 00 BC E0 11 01 11 01 01 00 81 C6 16` |
-| 确认 | 从站 → 主站 | 单字节 ACK | `E5` |
-| 读请求 | 主站 → 从站 | SEND_UDAT（FCB=0）承载 L_Data.req GroupRead | `68 0C 0C 68 53 11 00 BC E0 11 01 11 01 01 00 00 25 16` |
-| 确认 | 从站 → 主站 | 单字节 ACK | `E5` |
-| 请求状态 | 主站 → 从站 | REQ_STATUS（定长帧，功能码 0x9） | `10 49 49 16` |
-| 读应答 | 从站 → 主站 | RESPOND_UDAT（功能码 0x8，DIR=1）承载 L_Data.ind GroupResponse 值 true | `68 0C 0C 68 88 29 00 BC E0 11 0A 11 01 01 00 41 BC 16` |
-| 确认 | 主站 → 从站 | 单字节 ACK | `E5` |
+| 复位链路 | 主机 → 设备 | SEND_RESET（定长帧，功能码 0x0） | `10 40 40 16` |
+| 确认 | 设备 → 主机 | 单字节 ACK | `E5` |
+| 写布尔真 | 主机 → 设备 | SEND_UDAT（DIR=0，FCB=1）承载 L_Data.req GroupWrite | `68 0C 0C 68 73 11 00 BC E0 11 01 11 01 01 00 81 C6 16` |
+| 确认 | 设备 → 主机 | 单字节 ACK | `E5` |
+| 读请求 | 主机 → 设备 | SEND_UDAT（DIR=0，FCB=0）承载 L_Data.req GroupRead | `68 0C 0C 68 53 11 00 BC E0 11 01 11 01 01 00 00 25 16` |
+| 确认 | 设备 → 主机 | 单字节 ACK | `E5` |
+| 读应答 | 设备 → 主机 | SEND_UDAT（DIR=1，FCB=1）承载 L_Data.ind GroupResponse 值 true | `68 0C 0C 68 F3 29 00 BC E0 11 0A 11 01 01 00 41 27 16` |
+| 确认 | 主机 → 设备 | 单字节 ACK | `E5` |
 
 交互要点：
 
-- 复位后主站首帧 FCB=1，随后每条新 SEND_UDAT 翻转（1→0→1），用于抑制报文丢失/重复；每组 SEND_UDAT 都收到 `E5` 确认后才发下一帧。
-- 主站发的 SEND_UDAT 控制字段为 DIR=0、PRM=1（`73`/`53`）；从站回的数据用 RESPOND_UDAT，DIR=1、PRM=0（`88`）。两者承载同一份 cEMI L_Data 消息，`unwrap` 对两者一视同仁。
-- 读请求以 L_Data.req（消息码 `11`）承载 GroupRead `00 00`；对端设备以 L_Data.ind（消息码 `29`）承载 GroupResponse `00 41`（值 true）回答，这条响应在串口上以 RESPOND_UDAT 帧回传给主站。
+- 复位后两个方向各自的首帧 FCB=1，随后每条新 SEND_UDAT 各自翻转（主机侧 1→0，设备侧本次保持 1），用于抑制报文丢失/重复；每组 SEND_UDAT 都收到 `E5` 确认后才发下一帧。
+- 两个方向都用 SEND_UDAT（功能码 0x3、PRM=1），只靠 DIR 位区分：主机→设备控制字段为 `73`/`53`（DIR=0），设备→主机为 `F3`/`D3`（DIR=1）。两者承载同一份 cEMI L_Data 消息，`unwrap` 对两个方向一视同仁。
+- 读请求以 L_Data.req（消息码 `11`）承载 GroupRead `00 00`；对端设备以 L_Data.ind（消息码 `29`）承载 GroupResponse `00 41`（值 true）回答，这条响应在串口上以 DIR=1 的 SEND_UDAT 帧回传给主机。
 - 任一帧的算术和校验或 XOR 校验出错，`unwrap`/`Telegram::decode` 以 `BadChecksum` 拒绝，保证与目标设备在字节上互通。
 
 ## 原创与参考说明

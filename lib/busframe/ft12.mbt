@@ -9,17 +9,20 @@
 //   acknowledgement  E5
 //
 // CS is the 8-bit arithmetic sum (modulo 256) of the control field and the
-// following data bytes. C is the control field, laid out as
-// DIR/PRM/FCB/FCV plus a four-bit function code:
+// following data bytes. KNX runs FT1.2 balanced: both the host and the device
+// send SEND_UDAT (function code 0x3), and only the direction bit differs.
+// The control field is DIR/PRM/FCB/FCV plus a four-bit function code:
 //
 //   bit 7  DIR  0 = host to device, 1 = device to host
-//   bit 6  PRM  1 = primary (initiating) station
+//   bit 6  PRM  1 = primary station
 //   bit 5  FCB  frame count bit, toggled for each new send/confirm
 //   bit 4  FCV  frame count valid, always 1 for SEND_UDAT
-//   bit 3-0 function code (primary): 0x0 = SEND_RESET, 0x3 = SEND_UDAT,
-//   0x9 = REQ_STATUS. The secondary station (PRM=0, DIR=1) keeps the same
-//   field layout but uses function codes 0x8 = RESPOND_UDAT and
-//   0xB = RESPOND_STATUS.
+//   bit 3-0 function code: 0x0 = SEND_RESET, 0x3 = SEND_UDAT,
+//   0x9 = REQ_STATUS, 0xB = RESPOND_STATUS (link status response)
+//
+// So host-to-device SEND_UDAT is 0x53/0x73 (FCB 0/1) and device-to-host is
+// 0xD3/0xF3 (FCB 0/1). The device does not use a separate RESPOND_UDAT
+// function: the same SEND_UDAT carries data in both directions.
 
 ///|
 /// Framing failures.
@@ -54,17 +57,29 @@ pub const SEND_RESET : Int = 0x40
 pub const REQ_STATUS : Int = 0x49
 
 ///|
-/// Control field of a RESPOND_UDAT frame (secondary station, device to host).
-pub const RESPOND_UDAT : Int = 0x88
+/// Control field of a RESPOND_STATUS frame (secondary, DIR=1, PRM=0).
+pub const RESPOND_STATUS : Int = 0x8B
 
 ///|
-/// Control field of a SEND_UDAT frame. FCB toggles for each new send/confirm
-/// and is 1 on the first frame after a reset.
+/// Control field of a host-to-device SEND_UDAT frame. FCB toggles for each new
+/// send/confirm and is 1 on the first frame after a reset.
 pub fn send_udat(fcb : Bool) -> Int {
   if fcb {
     0x73
   } else {
     0x53
+  }
+}
+
+///|
+/// Control field of a device-to-host SEND_UDAT frame: the same function code
+/// as `send_udat` with the direction bit set. FCB toggles independently in
+/// this direction.
+pub fn send_udat_response(fcb : Bool) -> Int {
+  if fcb {
+    0xF3
+  } else {
+    0xD3
   }
 }
 
@@ -75,10 +90,9 @@ pub fn wrap(telegram : BytesView, fcb : Bool) -> Bytes {
 }
 
 ///|
-/// Wrap a telegram in a variable-length RESPOND_UDAT frame, the device-to-host
-/// counterpart of SEND_UDAT.
-pub fn respond_udat(telegram : BytesView) -> Bytes {
-  frame(telegram, RESPOND_UDAT)
+/// Wrap a cEMI message in a device-to-host SEND_UDAT frame.
+pub fn respond_udat(telegram : BytesView, fcb : Bool) -> Bytes {
+  frame(telegram, send_udat_response(fcb))
 }
 
 ///|
@@ -109,6 +123,21 @@ pub fn req_status() -> Bytes {
 }
 
 ///|
+/// Build a fixed-length RESPOND_STATUS frame carrying the given link status
+/// byte. The byte is caller-provided; the KNX link uses it to signal access
+/// demand (a telegram is pending for the host).
+pub fn respond_status(status : Byte) -> Bytes {
+  let checksum = (RESPOND_STATUS + status.to_int()) & 0xFF
+  let out = Buffer()
+  out.write_byte(START_FIXED.to_byte())
+  out.write_byte(RESPOND_STATUS.to_byte())
+  out.write_byte(status)
+  out.write_byte(checksum.to_byte())
+  out.write_byte(END.to_byte())
+  out.to_bytes()
+}
+
+///|
 /// Build the single-byte positive acknowledgement.
 pub fn ack() -> Bytes {
   b"\xE5"
@@ -131,7 +160,8 @@ pub fn unwrap(frame : BytesView) -> Bytes raise BusError {
   }
   if control != send_udat(false) &&
     control != send_udat(true) &&
-    control != RESPOND_UDAT {
+    control != send_udat_response(false) &&
+    control != send_udat_response(true) {
     raise NotUserData(control)
   }
   payload

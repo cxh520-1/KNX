@@ -1,8 +1,8 @@
 // FT1.2 tests pin the wire format against byte vectors from the KNX serial
-// data link: variable-length SEND_UDAT/RESPOND_UDAT frames, the fixed-length
-// reset and status requests, the single-byte ACK, the arithmetic checksum and
-// the FCB toggle. The payload is a cEMI L_Data message, which is what the
-// PEI16/RS-232 link actually carries, not a raw TP1 frame.
+// data link: variable-length SEND_UDAT frames in both directions, the
+// fixed-length reset and status requests, the single-byte ACK, the arithmetic
+// checksum and the FCB toggle. The payload is a cEMI L_Data message, which is
+// what the PEI16/RS-232 link actually carries, not a raw TP1 frame.
 
 ///|
 test "wrap builds a SEND_UDAT frame around a cemi message" {
@@ -38,17 +38,27 @@ test "req_status has the fixed wire form" {
 }
 
 ///|
-test "respond_udat builds a secondary user-data frame" {
+test "respond_udat builds a device-to-host SEND_UDAT frame" {
   assert_eq(
-    hex(respond_udat(cemi().exact_view())),
-    "680C0C68881100BCE011011101010081DB16",
+    hex(respond_udat(cemi().exact_view(), false)),
+    "680C0C68D31100BCE0110111010100812616",
+  )
+  assert_eq(
+    hex(respond_udat(cemi().exact_view(), true)),
+    "680C0C68F31100BCE0110111010100814616",
   )
 }
 
 ///|
 test "respond_udat round-trips through unwrap" {
-  let back = unwrap(respond_udat(cemi().exact_view()).exact_view())
+  let back = unwrap(respond_udat(cemi().exact_view(), true).exact_view())
   assert_eq(hex(back), "1100BCE011011101010081")
+}
+
+///|
+test "respond_status frames a link status byte" {
+  assert_eq(hex(respond_status(b"\x00"[0])), "108B008B16")
+  assert_eq(hex(respond_status(b"\x80"[0])), "108B800B16")
 }
 
 ///|

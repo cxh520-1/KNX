@@ -9,8 +9,8 @@
 | NPCI：组/个体、跳数、长度 | 可用 | 同上 |
 | 校验字节（逐字节异或） | 可用 | 同上 |
 | 扩展帧（长 TPDU） | 可用 | `lib/telegram/frame.mbt` |
-| FT1.2 变长帧 `68 L L 68 … 16`（SEND_UDAT，FCB/FCV） | 可用 | `lib/busframe/ft12.mbt` |
-| FT1.2 定长帧 `10 … 16`（SEND_RESET）与 ACK `E5` | 可用 | 同上 |
+| FT1.2 变长帧 `68 L L 68 … 16`（SEND_UDAT 双向：DIR=0 主机→设备 `53/73`，DIR=1 设备→主机 `D3/F3`） | 可用 | `lib/busframe/ft12.mbt` |
+| FT1.2 定长帧 `10 … 16`（SEND_RESET / REQ_STATUS / RESPOND_STATUS）与 ACK `E5` | 可用 | 同上 |
 | FT1.2 8 位算术和校验（模 256） | 可用 | 同上 |
 | FT1.2 载荷 | cEMI L_Data 消息（EMI 消息层，不是裸 TP1 帧） | `lib/busframe/ft12.mbt` |
 | cEMI L_Data 消息码 `11`/`29`/`2E`（req/ind/con） | 可用 | `lib/cemi/cemi.mbt` |

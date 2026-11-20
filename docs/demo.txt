@@ -23,8 +23,7 @@ serial frames (FT1.2, PEI16/RS-232):
   ack                E5
   read   fcb=0       68 0C 0C 68 53 11 00 BC E0 11 01 11 01 01 00 00 25 16
   ack                E5
-  req_status         10 49 49 16
-  respond            68 0C 0C 68 88 29 00 BC E0 11 0A 11 01 01 00 41 BC 16
+  respond fcb=1      68 0C 0C 68 F3 29 00 BC E0 11 0A 11 01 01 00 41 27 16
   ack                E5
 
 tunnel:
