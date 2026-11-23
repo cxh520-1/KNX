@@ -22,6 +22,7 @@ pub(all) struct Gateway {
   mut last_cemi : Bytes
   mut log : Array[String]
   mut lost : Int
+  mut keepalive_pending : Bool
 } derive(Debug, Eq)
 
 ///|
@@ -34,6 +35,7 @@ pub fn Gateway::new() -> Gateway {
     last_cemi: b"",
     log: [],
     lost: 0,
+    keepalive_pending: false,
   }
 }
 
@@ -118,6 +120,18 @@ pub fn Gateway::on_frame(self : Gateway, frame : BytesView) -> Array[Bytes] {
       replies.push(@knxip.tunnelling_ack(channel, sequence, 0))
       self.log.push("inbound request")
     }
+  } else if packet.service == @knxip.SERVICE_CONNECTION_STATE_RESPONSE {
+    self.keepalive_pending = false
+    self.log.push("keep-alive")
+  } else if packet.service == @knxip.SERVICE_DISCONNECT_REQUEST {
+    if packet.body.length() >= 2 {
+      replies.push(@knxip.disconnect_response(packet.body[0].to_int(), 0))
+    }
+    self.state = Closed
+    self.log.push("disconnect request")
+  } else if packet.service == @knxip.SERVICE_DISCONNECT_RESPONSE {
+    self.state = Closed
+    self.log.push("disconnect response")
   }
   replies
 }
@@ -156,6 +170,31 @@ pub fn Gateway::disconnect(self : Gateway) -> Bytes? {
 ///|
 pub fn Gateway::pending(self : Gateway) -> Int? {
   self.awaiting
+}
+
+///|
+/// Send a keep-alive heartbeat on the open channel, returning the
+/// CONNECTION_STATE_REQUEST frame for the transport. The caller drives the
+/// timer; `keep_alive_pending` reports whether the last heartbeat went
+/// unanswered, which is how the caller detects a lost link.
+pub fn Gateway::connection_state(self : Gateway) -> Bytes? {
+  if self.state != Connected {
+    return None
+  }
+  self.keepalive_pending = true
+  self.log.push("connection state")
+  Some(
+    @knxip.connection_state_request(
+      self.channel,
+      @knxip.Hpai::new(0, 0, 0, 0, 0),
+    ),
+  )
+}
+
+///|
+/// Whether a keep-alive heartbeat is still awaiting its acknowledgement.
+pub fn Gateway::keep_alive_pending(self : Gateway) -> Bool {
+  self.keepalive_pending
 }
 
 ///|

@@ -177,3 +177,55 @@ test "accessors expose channel and pending state" {
   assert_eq(client.channel_number(), 3)
   assert_true(client.pending() is None)
 }
+
+///|
+test "keep-alive sends a connection state request" {
+  let client = gateway()
+  ignore(client.connect(endpoint()))
+  ignore(client.on_frame(@knxip.connect_response(3, endpoint()).exact_view()))
+  match client.connection_state() {
+    None => fail("expected a keep-alive frame")
+    Some(frame) => {
+      assert_eq(
+        @knxip.parse(frame.exact_view()).service,
+        @knxip.SERVICE_CONNECTION_STATE_REQUEST,
+      )
+      assert_true(client.keep_alive_pending())
+    }
+  }
+}
+
+///|
+test "keep-alive response clears the pending flag" {
+  let client = gateway()
+  ignore(client.connect(endpoint()))
+  ignore(client.on_frame(@knxip.connect_response(3, endpoint()).exact_view()))
+  ignore(client.connection_state())
+  ignore(client.on_frame(@knxip.connection_state_response(3, 0).exact_view()))
+  assert_false(client.keep_alive_pending())
+}
+
+///|
+test "server disconnect request closes and is acknowledged" {
+  let client = gateway()
+  ignore(client.connect(endpoint()))
+  ignore(client.on_frame(@knxip.connect_response(3, endpoint()).exact_view()))
+  let replies = client.on_frame(
+    @knxip.disconnect_request(3, endpoint()).exact_view(),
+  )
+  assert_true(client.state == Closed)
+  assert_eq(replies.length(), 1)
+  assert_eq(
+    @knxip.parse(replies[0].exact_view()).service,
+    @knxip.SERVICE_DISCONNECT_RESPONSE,
+  )
+}
+
+///|
+test "disconnect response closes the tunnel" {
+  let client = gateway()
+  ignore(client.connect(endpoint()))
+  ignore(client.on_frame(@knxip.connect_response(3, endpoint()).exact_view()))
+  ignore(client.on_frame(@knxip.disconnect_response(3, 0).exact_view()))
+  assert_true(client.state == Closed)
+}

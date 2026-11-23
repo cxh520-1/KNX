@@ -19,7 +19,7 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 - `busframe`：FT1.2 串口帧（PEI16/RS-232），做字符级定界、控制字段（FCB/FCV、DIR/PRM）与 8 位算术和校验，载荷是 cEMI L_Data 消息。
 - `cemi`：EMI 消息层，`L_Data.req/ind/con` 编解码，串口 FT1.2 与 KNX/IP 隧道共用，在 telegram 与链路之间。
 - `knxip`：KNX/IP 头与各服务体：发现、描述、连接、隧道、路由、设备管理、断开。
-- `gateway`：隧道客户端状态机，管理通道、序号、Ack、重发与入站应答。
+- `gateway`：隧道客户端状态机，管理通道、序号、Ack、重发、入站应答、保活心跳与失联判定、断开。
 - `project`：组地址 ↔ DPT 工程表，解析、校验、合并、统计。
 - `trace`：把一帧解释成可读文本，不改变任何状态。
 - `cmd`：命令行，只做输入输出。
@@ -57,7 +57,7 @@ TPDU 前两字节是 APCI：
 
 ## 网络与客户端
 
-`knxip` 只负责把服务体拼进六字节头或从帧里拆出来，不保存状态。`gateway` 才保存通道号、序号和未确认请求；它调用 `knxip` 生成帧，把「什么时候重发、什么时候断开」留给调用方。
+`knxip` 只负责把服务体拼进六字节头或从帧里拆出来，不保存状态。`gateway` 才保存通道号、序号和未确认请求；它调用 `knxip` 生成帧，把「什么时候重发、什么时候断开」留给调用方。连接生命周期分工明确：`gateway` 生成 CONNECT/CONNECTION_STATE（保活）/DISCONNECT 帧并处理对应响应，定时调度与超时判定归调用方——库不持有时钟，只暴露 `keep_alive_pending()` 供调用方判断是否失联。
 
 `cemi` 是两者的中间层：隧道与设备管理的正文都以 cEMI 开头，`gateway` 用它把 telegram 包进去。
 

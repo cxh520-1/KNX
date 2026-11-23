@@ -66,6 +66,7 @@
 | cEMI 与 TP1 报文互转 | 可用 | 同上 |
 | KNX/IP 固定头（`06 10`，服务码，总长） | 可用 | `lib/knxip/knxip.mbt` |
 | CONNECT_REQUEST / CONNECT_RESPONSE | 可用 | 同上 |
+| CONNECTION_STATE_REQUEST / RESPONSE（保活心跳） | 可用 | 同上 |
 | TUNNELLING_REQUEST / TUNNELLING_ACK | 可用 | 同上 |
 | HPAI（IPv4 + UDP 端口） | 可用 | 同上 |
 | SEARCH_REQUEST / SEARCH_RESPONSE | 可用 | `lib/knxip/knxip.mbt` |
@@ -94,7 +95,10 @@
 | 序号分配与 Ack 匹配 | 可用 |
 | 未确认请求重发 | 可用 |
 | 入站 TUNNELLING_REQUEST 自动应答 | 可用 |
-| 超时判定 | 由调用方负责 |
+| 保活心跳（CONNECTION_STATE_REQUEST 生成 + RESPONSE 清除待确认标记） | 可用 |
+| 失联判定（`keep_alive_pending()` 暴露心跳未确认状态） | 可用 |
+| 断开（`disconnect()` 发 DISCONNECT_REQUEST；处理 DISCONNECT_RESPONSE 与服务端主动 DISCONNECT_REQUEST） | 可用 |
+| 定时调度 | 由调用方负责 |
 ## 监控与统计
 
 | 能力 | 状态 |

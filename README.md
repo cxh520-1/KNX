@@ -65,8 +65,8 @@ cmd             命令行
 | 数据点 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，含百分比与场景 | 可用 |
 | 设备与总线 | 组对象、写更新、读应答、广播、按组统计 | 可用 |
 | EMI 消息层 | cEMI `L_Data.req/ind/con`（串口 FT1.2 与 KNX/IP 隧道共用） | 可用 |
-| KNX/IP | SEARCH/DESCRIPTION/CONNECT/TUNNELLING/ROUTING/设备管理/DISCONNECT | 可用 |
-| 客户端 | 连接、序号、Ack、重发、入站应答、断开 | 可用 |
+| KNX/IP | SEARCH/DESCRIPTION/CONNECT/CONNECTION_STATE(保活)/TUNNELLING/ROUTING/设备管理/DISCONNECT | 可用 |
+| 客户端 | 连接、序号、Ack、重发、入站应答、保活心跳、失联判定、断开 | 可用 |
 | 工程表 | 解析、重复检测、合并、反写、按 DPT 统计 | 可用 |
 | 监控 | 单帧解释、抓包逐帧渲染 | 可用 |
 | 安全 | KNX Secure | 未实现 |
@@ -95,7 +95,7 @@ cmd             命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 104 个用例
+moon test --deny-warn     # 110 个用例
 moon fmt --check
 moon build --target wasm
 ```

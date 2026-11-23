@@ -260,3 +260,21 @@ test "disconnect response is two bytes" {
   assert_eq(parsed.service, SERVICE_DISCONNECT_RESPONSE)
   assert_eq(parsed.body.length(), 2)
 }
+
+///|
+test "connection state request is the keep-alive heartbeat" {
+  let frame = connection_state_request(7, Hpai::new(192, 168, 1, 10, 3671))
+  assert_eq(hex_of(frame), "06100207001007000801C0A8010A0E57")
+  let parsed = parse(frame.exact_view())
+  assert_eq(parsed.service, SERVICE_CONNECTION_STATE_REQUEST)
+  assert_eq(parsed.body[0].to_int(), 7)
+}
+
+///|
+test "connection state response is two bytes" {
+  let frame = connection_state_response(7, 0)
+  assert_eq(hex_of(frame), "0610020800080700")
+  let parsed = parse(frame.exact_view())
+  assert_eq(parsed.service, SERVICE_CONNECTION_STATE_RESPONSE)
+  assert_eq(parsed.body.length(), 2)
+}

@@ -12,7 +12,7 @@
 
 ## 项目简介
 
-KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 4755 行（含 1383 行测试；有效代码 3372 行），104 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
+KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 4899 行（含 1453 行测试；有效代码 3446 行），110 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
 
 ## 使用场景
 
@@ -30,12 +30,12 @@ KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关
 - 提供 DPT-1/5/6/7/8/9/10/11/12/13/14/16/17 编解码，以及 DPT-5.004 百分比与 DPT-17 场景子类型；
 - 提供组对象表与设备行为，支持写入更新、读取应答、未知组忽略；
 - 提供虚拟总线，支持写广播、读收集应答、活动轨迹与按组统计；
-- 提供 KNX/IP 头与 SEARCH、DESCRIPTION、CONNECT、TUNNELLING、ROUTING、设备管理、DISCONNECT 服务；
-- 提供隧道客户端状态机，管理通道号、序号、Ack、重发、入站自动应答与断开；
+- 提供 KNX/IP 头与 SEARCH、DESCRIPTION、CONNECT、CONNECTION_STATE（保活）、TUNNELLING、ROUTING、设备管理、DISCONNECT 服务；
+- 提供隧道客户端状态机，管理通道号、序号、Ack、重发、入站自动应答、保活心跳与失联判定、断开；
 - 提供组地址工程表的解析、重复检测、合并、反写与按 DPT 统计；
 - 提供单帧解释与抓包逐帧渲染的监控模块；
 - 提供 CLI，包含 `decode`、`demo`、`frames`、`cemi`、`tunnel`、`search`、`device`、`plan`、`desc`、`mon`；
-- 提供 104 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
+- 提供 110 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
 - 提供 README 与 `docs/` 示例，覆盖总线演示、隧道组帧和监控输出。
 
 ## 标准互操作机制
@@ -59,7 +59,7 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 | TP1 数据链路帧 | ISO/IEC 14543-3-2 | 标准帧与扩展帧、控制字节校验 `(ctrl & 0x53) == 0x10`、源/目的地址、NPCI、逐字节 XOR 校验 |
 | 组服务 | KNX 系统规范（TP1 应用层） | GroupRead / GroupWrite / GroupResponse，短值内联与长值长度 |
 | 数据点 | KNX Standard 3/7/1 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，及 DPT-5.004 百分比、DPT-17 场景子类型 |
-| KNXnet/IP | ISO/IEC 14543-3-5 | 固定头 `06 10`、SEARCH / DESCRIPTION / CONNECT / TUNNELLING / ROUTING / 设备管理 / DISCONNECT |
+| KNXnet/IP | ISO/IEC 14543-3-5 | 固定头 `06 10`、SEARCH / DESCRIPTION / CONNECT / CONNECTION_STATE（保活）/ TUNNELLING / ROUTING / 设备管理 / DISCONNECT |
 
 明确不在范围内（不影响上表字节级互操作，但本库不实现）：
 
@@ -70,6 +70,19 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 - 厂商自定义 DPT。
 
 本库为 sans-IO：不打开串口、不配置线参数，只产生/消费字节；19200 8E1 是 PEI16 FT1.2 模式的约定（区别于旧 PEI16 模式的 9600 8N1 加 RTS/CTS），由调用方在打开 UART 时设定。
+
+## 连接生命周期与责任边界
+
+KNXnet/IP 隧道是一条持续连接，其完整生命周期由库与调用方分工完成。库为 sans-IO、不持有时钟，因此**帧的生成与响应处理归库，定时与传输归调用方**：
+
+| 阶段 | 库负责 | 调用方负责 |
+|---|---|---|
+| 建立 | `connect()` 生成 CONNECT_REQUEST，`on_frame` 处理 CONNECT_RESPONSE 并进入 Connected | 发送帧、接收响应 |
+| 数据 | `send()`/`retry()` 生成 TUNNELLING_REQUEST，`on_frame` 处理 TUNNELLING_ACK 与入站 TUNNELLING_REQUEST | 收发帧 |
+| 保活 | `connection_state()` 生成 CONNECTION_STATE_REQUEST，`on_frame` 处理 CONNECTION_STATE_RESPONSE 并清除待确认标记 | 周期性（约 60s）调用 `connection_state()` 发心跳；在超时（约 120s）内未收到响应时用 `keep_alive_pending()` 判定失联并触发重连 |
+| 断开 | `disconnect()` 生成 DISCONNECT_REQUEST；`on_frame` 处理 DISCONNECT_RESPONSE 与服务端主动 DISCONNECT_REQUEST（自动回 DISCONNECT_RESPONSE），进入 Closed | 发送断开帧、关闭套接字 |
+
+保活采用 KNXnet/IP CONNECTION_STATE 服务（CONNECTION_STATE_REQUEST `0x0207` / CONNECTION_STATE_RESPONSE `0x0208`），默认心跳间隔 60s、失联判定 120s，均由调用方调度。这样持续隧道连接的保活与失联反馈都有明确归属，库不做定时器、不抢调用方的传输与调度职责。
 
 ## 端到端报文案例
 

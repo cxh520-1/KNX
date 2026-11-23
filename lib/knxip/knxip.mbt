@@ -31,6 +31,12 @@ pub const SERVICE_DISCONNECT_REQUEST : Int = 0x0209
 pub const SERVICE_DISCONNECT_RESPONSE : Int = 0x020A
 
 ///|
+pub const SERVICE_CONNECTION_STATE_REQUEST : Int = 0x0207
+
+///|
+pub const SERVICE_CONNECTION_STATE_RESPONSE : Int = 0x0208
+
+///|
 /// Host protocol address information: an IP and a UDP port.
 pub(all) struct Hpai {
   ip : (Int, Int, Int, Int)
@@ -171,6 +177,8 @@ pub fn service_name(service : Int) -> String {
     0x0203 => "DESCRIPTION_REQUEST"
     0x0205 => "CONNECT_REQUEST"
     0x0206 => "CONNECT_RESPONSE"
+    0x0207 => "CONNECTION_STATE_REQUEST"
+    0x0208 => "CONNECTION_STATE_RESPONSE"
     0x0420 => "TUNNELLING_REQUEST"
     0x0421 => "TUNNELLING_ACK"
     0x0209 => "DISCONNECT_REQUEST"
@@ -523,4 +531,24 @@ pub fn disconnect_response(channel : Int, status : Int) -> Bytes {
   body.write_byte(channel.to_byte())
   body.write_byte(status.to_byte())
   packet(SERVICE_DISCONNECT_RESPONSE, body.to_bytes())
+}
+
+///|
+/// Build a connection-state request: the keep-alive heartbeat a tunnelling
+/// client sends on an idle channel to check the link is still alive.
+pub fn connection_state_request(channel : Int, control : Hpai) -> Bytes {
+  let body = Buffer()
+  body.write_byte(channel.to_byte())
+  body.write_byte(0x00)
+  body.write_bytes(control.encode().exact_view())
+  packet(SERVICE_CONNECTION_STATE_REQUEST, body.to_bytes())
+}
+
+///|
+/// Build the keep-alive acknowledgement for a connection-state request.
+pub fn connection_state_response(channel : Int, status : Int) -> Bytes {
+  let body = Buffer()
+  body.write_byte(channel.to_byte())
+  body.write_byte(status.to_byte())
+  packet(SERVICE_CONNECTION_STATE_RESPONSE, body.to_bytes())
 }

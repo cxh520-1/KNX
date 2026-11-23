@@ -140,11 +140,18 @@ fn demo() -> Unit {
     @knxip.Hpai::new(192, 168, 1, 10, 3672),
   )
   let tunnel = @knxip.tunnelling_request(1, 0, cemi.exact_view())
+  let keepalive = @knxip.connection_state_request(
+    1,
+    @knxip.Hpai::new(192, 168, 1, 10, 3671),
+  )
+  let disconnect = @knxip.disconnect_request(1, @knxip.Hpai::new(0, 0, 0, 0, 0))
   println("")
   println("tunnel:")
-  println("  cEMI               " + spaced_hex(cemi))
-  println("  CONNECT_REQUEST    " + spaced_hex(connect))
-  println("  TUNNELLING_REQUEST " + spaced_hex(tunnel))
+  println("  cEMI                " + spaced_hex(cemi))
+  println("  CONNECT_REQUEST     " + spaced_hex(connect))
+  println("  TUNNELLING_REQUEST  " + spaced_hex(tunnel))
+  println("  CONNECTION_STATE    " + spaced_hex(keepalive))
+  println("  DISCONNECT_REQUEST  " + spaced_hex(disconnect))
   println("")
   println("monitor:")
   println("  " + @trace.describe(tunnel.exact_view()))
