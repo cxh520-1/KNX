@@ -9,7 +9,6 @@ fn main {
     "decode" => decode(args)
     "demo" => demo()
     "frames" => frames()
-    "soak" => soak(args)
     "cemi" => cemi(args)
     "tunnel" => tunnel()
     "search" => search()
@@ -28,7 +27,6 @@ fn usage() -> Unit {
   println("  knx decode <hex>   decode a telegram, cemi message or FT1.2 frame")
   println("  knx demo           run the switch, lamp, dimmer and sensor demo")
   println("  knx frames         print the demo frames in FT1.2 form")
-  println("  knx soak [n]       repeat the demo n times")
   println("  knx cemi <hex>     decode a cEMI L_Data message")
   println("  knx tunnel         build a connect and tunnelling request")
   println("  knx search         build a discovery request and response")
@@ -168,37 +166,6 @@ fn frames() -> Unit {
   println("cEMI        " + spaced_hex(cemi))
   println("FT1.2 fcb=0 " + spaced_hex(@busframe.wrap(cemi.exact_view(), false)))
   println("FT1.2 fcb=1 " + spaced_hex(@busframe.wrap(cemi.exact_view(), true)))
-}
-
-///|
-fn soak(args : Array[String]) -> Unit {
-  let count = if args.length() > 2 {
-    match parse_int(args[2]) {
-      Some(value) => value
-      None => 100
-    }
-  } else {
-    100
-  }
-  let bus = @net.Bus::new()
-  let switch = @device.Device::new(ia("1.1.1"), "switch")
-  let lamp = @device.Device::new(ia("1.1.10"), "lamp")
-  lamp.add(ga("2/1/1"), @datapoint.Dpt1, @datapoint.Bool(false))
-  bus.attach(lamp)
-  for index in 0..<count {
-    ignore(
-      bus.write(
-        switch.address,
-        ga("2/1/1"),
-        @datapoint.Dpt1,
-        @datapoint.Bool(index % 2 == 0),
-      ),
-    )
-  }
-  println(
-    "writes=" + count.to_string() + " frames=" + bus.frames.length().to_string(),
-  )
-  println("last lamp state = " + show_value(lamp.value(ga("2/1/1"))))
 }
 
 ///|
@@ -362,25 +329,6 @@ fn bytes_of_hex(text : String) -> Bytes {
     }
   }
   out.to_bytes()
-}
-
-///|
-fn parse_int(text : String) -> Int? {
-  let mut value = 0
-  let mut seen = false
-  for index in 0..<text.length() {
-    let code = text.get_char(index).unwrap().to_int()
-    if code < 48 || code > 57 {
-      return None
-    }
-    value = value * 10 + (code - 48)
-    seen = true
-  }
-  if seen {
-    Some(value)
-  } else {
-    None
-  }
 }
 
 ///|
