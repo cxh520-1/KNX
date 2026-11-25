@@ -50,16 +50,16 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 
 ## 最终标准符合性目标
 
-本库在字节层面符合下列标准的公开部分，符合范围逐层列明；未列出的部分不在本项目范围内，且在 `docs/protocol.md` 中标为「未实现」。
+本库的符合性目标是：**在字节层面符合下列标准的公开规定——产出的帧与解析的帧与标准规定的字节格式逐字节一致**。库为 sans-IO（只处理字节，不涉及电气层、时序与物理介质），因此符合性落在「帧格式 / 消息格式 / 编码」三类，不涉及总线电气层与调度时序。下表逐层给出标准依据（含版本）与本库实现并测试的符合性范围；每一层所列即该标准中与字节格式相关的**全部必需行为**，其余部分在下方清单中明确排除。
 
-| 协议层 | 符合的标准 | 本库实现并测试的范围 |
+| 协议层 | 标准依据（含版本） | 本库实现并测试的符合性范围 |
 |---|---|---|
-| FT1.2 串口数据链路 | IEC 870-5-1 子集，经 KNX 系统规范 Volume 3/3「物理外部接口（PEI16/RS-232）」采用 | 变长 SEND_UDAT `68 L L 68 … 16` 双向（DIR=0 主机→设备、DIR=1 设备→主机）、定长 SEND_RESET `10 40 40 16`、定长 REQ_STATUS `10 49 49 16`、定长 RESPOND_STATUS `10 8B … 16`、单字节 ACK `E5`、8 位算术和校验（模 256）、DIR/PRM/FCB/FCV 控制字段；载荷为 cEMI L_Data 消息；线参数 19200 8E1 |
-| EMI 消息层（cEMI L_Data） | KNX 系统规范（External Message Interface） | L_Data.req / ind / con 编解码，消息码 `11`/`29`/`2E`，控制字段 1/2、源/目的地址、长度与 TPDU，与 TP1 报文互转 |
-| TP1 数据链路帧 | ISO/IEC 14543-3-2 | 标准帧与扩展帧、控制字节校验 `(ctrl & 0x53) == 0x10`、源/目的地址、NPCI、逐字节 XOR 校验 |
-| 组服务 | KNX 系统规范（TP1 应用层） | GroupRead / GroupWrite / GroupResponse，短值内联与长值长度 |
-| 数据点 | KNX Standard 3/7/1 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，及 DPT-5.004 百分比、DPT-17 场景子类型 |
-| KNXnet/IP | ISO/IEC 14543-3-5 | 固定头 `06 10`、SEARCH / DESCRIPTION / CONNECT / CONNECTION_STATE（保活）/ TUNNELLING / ROUTING / 设备管理 / DISCONNECT |
+| FT1.2 串口数据链路 | IEC 870-5-1（FT1.2 字符规程），经 KNX 系统规范 Volume 3/3「物理外部接口（PEI16/RS-232）」采用 | SEND_UDAT 变长帧 `68 L L 68 … 16` 双向（DIR=0 主机→设备、DIR=1 设备→主机）、SEND_RESET `10 40 40 16`、REQ_STATUS `10 49 49 16`、RESPOND_STATUS `10 8B … 16`、单字节 ACK `E5`、8 位算术和校验（模 256）、DIR/PRM/FCB/FCV 控制字段；载荷为 cEMI L_Data 消息；线参数 19200 8E1 |
+| EMI 消息层（cEMI L_Data） | KNX 系统规范（Common EMI / External Message Interface） | L_Data.req / ind / con（消息码 `11`/`29`/`2E`）、附加信息长度、控制字段 1/2、源/目的地址、NPDU 长度、TPDU，与 TP1 报文互转 |
+| TP1 数据链路帧 | ISO/IEC 14543-3-6（KNX TP1 双绞线数据链路层） | 标准帧与扩展帧、控制字节校验 `(ctrl & 0x53) == 0x10`、源/目的地址、NPCI、逐字节 XOR 校验 |
+| 组服务（APCI） | KNX 系统规范（TP1 应用层） | GroupRead / GroupWrite / GroupResponse，短值内联与长值长度 |
+| 数据点 | KNX Standard Volume 3/7（Data Point Types） | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，及 DPT-5.004 百分比、DPT-17 场景子类型 |
+| KNXnet/IP | ISO 22510:2019（KNXnet/IP communication） | 固定头 `06 10`、SEARCH / DESCRIPTION / CONNECT / CONNECTION_STATE（保活）/ TUNNELLING / ROUTING / 设备管理 / DISCONNECT |
 
 明确不在范围内（不影响上表字节级互操作，但本库不实现）：
 
@@ -83,6 +83,15 @@ KNXnet/IP 隧道是一条持续连接，其完整生命周期由库与调用方�
 | 断开 | `disconnect()` 生成 DISCONNECT_REQUEST；`on_frame` 处理 DISCONNECT_RESPONSE 与服务端主动 DISCONNECT_REQUEST（自动回 DISCONNECT_RESPONSE），进入 Closed | 发送断开帧、关闭套接字 |
 
 保活采用 KNXnet/IP CONNECTION_STATE 服务（CONNECTION_STATE_REQUEST `0x0207` / CONNECTION_STATE_RESPONSE `0x0208`），默认心跳间隔 60s、失联判定 120s，均由调用方调度。这样持续隧道连接的保活与失联反馈都有明确归属，库不做定时器、不抢调用方的传输与调度职责。
+
+下面是 `moon run cmd -- demo` 真实打印的 KNXnet/IP 隧道完整交互（互操作边界，channel=1）：
+
+| 步骤 | 服务 | 字节 |
+|---|---|---|
+| 建立连接 | CONNECT_REQUEST `0x0205` | `06 10 02 05 00 1A 08 01 C0 A8 01 0A 0E 57 08 01 C0 A8 01 0A 0E 58 04 04 02 00` |
+| 隧道转发 | TUNNELLING_REQUEST `0x0420`（承载 cEMI L_Data.req） | `06 10 04 20 00 15 04 01 00 00 11 00 BC E0 11 01 11 01 01 00 81` |
+| 保活心跳 | CONNECTION_STATE_REQUEST `0x0207` | `06 10 02 07 00 10 01 00 08 01 C0 A8 01 0A 0E 57` |
+| 断开连接 | DISCONNECT_REQUEST `0x0209` | `06 10 02 09 00 10 01 00 08 01 00 00 00 00 00 00` |
 
 ## 端到端报文案例
 
@@ -123,7 +132,7 @@ FT1.2 帧的校验字节为 `0xC6`：`0x73 + 0x11 + 0x00 + 0xBC + 0xE0 + 0x11 + 
 ## 原创与参考说明
 
 - 本项目为原创项目，不是移植项目，无原项目名称、来源链接与许可证需要声明；
-- 协议字段依据 ISO/IEC 14543-3、IEC 870-5-1 与 KNX 公开资料核对，代码为自写，不包含第三方代码，不依赖 FFI；
+- 协议字段依据 ISO/IEC 14543-3、ISO 22510（KNXnet/IP）、IEC 870-5-1 与 KNX 公开资料核对，代码为自写，不包含第三方代码，不依赖 FFI；
 - 本项目许可证：Apache-2.0；
 - 与常见实现相比的设计取舍：
   - 使用 MoonBit 原生包结构与测试方式组织代码，而不是复刻 Java 或 C 工程结构；

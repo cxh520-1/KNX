@@ -104,4 +104,4 @@ CI 在每次推送时跑 `moon check`、`moon test` 与 wasm 构建。测试覆�
 
 ## 许可证
 
-Apache-2.0，见 `LICENSE`。协议字段依据 KNX 公开标准（ISO/IEC 14543-3）与公开资料核对，代码为自写，无第三方代码。
+Apache-2.0，见 `LICENSE`。协议字段依据 KNX 公开标准（ISO/IEC 14543-3、ISO 22510）与公开资料核对，代码为自写，无第三方代码。
