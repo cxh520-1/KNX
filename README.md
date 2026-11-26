@@ -61,9 +61,10 @@ cmd             命令行
 | 地址 | 个体地址 `1.2.3`、组地址 `1/2/3` | 可用 |
 | 报文 | TP1 标准帧与扩展帧（TPDU > 16 字节自动切换） | 可用 |
 | 服务 | GroupRead / GroupWrite / GroupResponse | 可用 |
+| 管理 | 个体地址读写、设备描述符读取、内存读写（点对点 APCI） | 可用 |
 | 串口 | FT1.2 `68 L L 68 … 16`（SEND_UDAT 双向，DIR 区分方向，承载 cEMI L_Data）/ `10 … 16`（SEND_RESET / REQ_STATUS / RESPOND_STATUS）/ `E5`，算术和校验，FCB/FCV、DIR/PRM | 可用 |
 | 数据点 | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，含百分比与场景 | 可用 |
-| 设备与总线 | 组对象、写更新、读应答、广播、按组统计 | 可用 |
+| 设备与总线 | 组对象、写更新、读应答、广播、按组统计、出厂设备个体地址编程 | 可用 |
 | EMI 消息层 | cEMI `L_Data.req/ind/con`（串口 FT1.2 与 KNX/IP 隧道共用） | 可用 |
 | KNX/IP | SEARCH/DESCRIPTION/CONNECT/CONNECTION_STATE(保活)/TUNNELLING/ROUTING/设备管理/DISCONNECT | 可用 |
 | 客户端 | 连接、序号、Ack、重发、入站应答、保活心跳、失联判定、断开 | 可用 |
@@ -85,7 +86,7 @@ cmd             命令行
 
 ## 边界与未实现
 
-- 只做报文与设备模型，不做电气层，不做总线仲裁时序；EMI 管理服务（设备描述符、内存读写、个体地址服务）未实现，FT1.2 只承载 cEMI L_Data 报文。
+- 只做报文与设备模型，不做电气层，不做总线仲裁时序；FT1.2 只承载 cEMI L_Data 报文。
 - KNX Secure、ETS 工程导入未实现；组地址由调用方配置。
 - native 目标需要系统 C 编译器，当前环境未安装；wasm-gc 可正常构建。
 
@@ -95,7 +96,7 @@ cmd             命令行
 
 ```bash
 moon check --deny-warn
-moon test --deny-warn     # 110 个用例
+moon test --deny-warn     # 120 个用例
 moon fmt --check
 moon build --target wasm
 ```

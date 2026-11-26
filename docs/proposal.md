@@ -12,7 +12,7 @@
 
 ## 项目简介
 
-KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 4847 行（含 1453 行测试；有效代码 3394 行），110 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
+KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关的完整路径：FT1.2 串口帧（PEI16/RS-232 物理外部接口）、cEMI L_Data 消息层（EMI 标准接口）、TP1 标准帧与扩展帧、组服务、数据点编解码、设备与虚拟总线、KNX/IP 隧道以及客户端状态机。项目面向需要在 MoonBit 中接入或模拟 KNX 的库作者、网关开发者和调试工具作者，提供可直接组合的协议层，而不是绑定某一家网关厂商的 SDK。当前版本 MoonBit 源码 5364 行（含 1616 行测试；有效代码 3748 行），120 项测试通过，CI 每次推送执行 check、test 与 wasm 构建。
 
 ## 使用场景
 
@@ -27,15 +27,16 @@ KNX 用 MoonBit 实现楼宇总线协议链路，覆盖从串口帧到 IP 网关
 - 提供 cEMI L_Data 消息层（EMI 标准接口）：`L_Data.req/ind/con` 编解码，与 TP1 报文互转，是 FT1.2 串口与 KNX/IP 隧道共同承载的消息格式；
 - 提供 TP1 标准帧与扩展帧，覆盖控制字段、源/目的地址、NPCI、XOR 校验，TPDU 超过 16 字节自动切换布局；
 - 提供 GroupRead、GroupWrite、GroupResponse 三种组服务，支持短值内联与长值带长度；
+- 提供管理服务（点对点 APCI）：个体地址读写（`A_IndividualAddress_Read/Write/Response`）、设备描述符读取（`A_DeviceDescriptor_Read/Response`）、内存读写（`A_Memory_Read/Write/Response`），用于把出厂设备从初始模式编程到可通信状态；
 - 提供 DPT-1/5/6/7/8/9/10/11/12/13/14/16/17 编解码，以及 DPT-5.004 百分比与 DPT-17 场景子类型；
-- 提供组对象表与设备行为，支持写入更新、读取应答、未知组忽略；
+- 提供组对象表与设备行为，支持写入更新、读取应答、未知组忽略，以及出厂设备（`15.15.255`、编程模式）的个体地址编程与设备描述符应答；
 - 提供虚拟总线，支持写广播、读收集应答、活动轨迹与按组统计；
 - 提供 KNX/IP 头与 SEARCH、DESCRIPTION、CONNECT、CONNECTION_STATE（保活）、TUNNELLING、ROUTING、设备管理、DISCONNECT 服务；
 - 提供隧道客户端状态机，管理通道号、序号、Ack、重发、入站自动应答、保活心跳与失联判定、断开；
 - 提供组地址工程表的解析、重复检测、合并、反写与按 DPT 统计；
 - 提供单帧解释与抓包逐帧渲染的监控模块；
 - 提供 CLI，包含 `decode`、`demo`、`frames`、`cemi`、`tunnel`、`search`、`device`、`plan`、`desc`、`mon`；
-- 提供 110 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
+- 提供 120 个 MoonBit 测试与 GitHub Actions，覆盖字面字节、双向往返和错误路径；
 - 提供 README 与 `docs/` 示例，覆盖总线演示、隧道组帧和监控输出。
 
 ## 标准互操作机制
@@ -58,13 +59,13 @@ FT1.2 这一层不是自造的封装，而是按 KNX 物理外部接口（PEI16/
 | EMI 消息层（cEMI L_Data） | KNX 系统规范（Common EMI / External Message Interface） | L_Data.req / ind / con（消息码 `11`/`29`/`2E`）、附加信息长度、控制字段 1/2、源/目的地址、NPDU 长度、TPDU，与 TP1 报文互转 |
 | TP1 数据链路帧 | ISO/IEC 14543-3-6（KNX TP1 双绞线数据链路层） | 标准帧与扩展帧、控制字节校验 `(ctrl & 0x53) == 0x10`、源/目的地址、NPCI、逐字节 XOR 校验 |
 | 组服务（APCI） | KNX 系统规范（TP1 应用层） | GroupRead / GroupWrite / GroupResponse，短值内联与长值长度 |
+| 管理服务（APCI，点对点） | KNX 系统规范（TP1 应用层 / 管理） | `A_IndividualAddress_Write/Read/Response`、`A_DeviceDescriptor_Read/Response`、`A_Memory_Read/Write/Response`——设备初始化（个体地址编程 + 描述符读取 + 内存读写） |
 | 数据点 | KNX Standard Volume 3/7（Data Point Types） | DPT-1/5/6/7/8/9/10/11/12/13/14/16/17，及 DPT-5.004 百分比、DPT-17 场景子类型 |
 | KNXnet/IP | ISO 22510:2019（KNXnet/IP communication） | 固定头 `06 10`、SEARCH / DESCRIPTION / CONNECT / CONNECTION_STATE（保活）/ TUNNELLING / ROUTING / 设备管理 / DISCONNECT |
 
 明确不在范围内（不影响上表字节级互操作，但本库不实现）：
 
 - 电气层与总线仲裁时序；
-- EMI 管理服务（设备描述符读取、内存读写、个体地址服务）；
 - KNX Secure 安全封装与会话握手；
 - ETS 工程导入（`.knxproj` 解析）；
 - 厂商自定义 DPT。
@@ -92,6 +93,20 @@ KNXnet/IP 隧道是一条持续连接，其完整生命周期由库与调用方�
 | 隧道转发 | TUNNELLING_REQUEST `0x0420`（承载 cEMI L_Data.req） | `06 10 04 20 00 15 04 01 00 00 11 00 BC E0 11 01 11 01 01 00 81` |
 | 保活心跳 | CONNECTION_STATE_REQUEST `0x0207` | `06 10 02 07 00 10 01 00 08 01 C0 A8 01 0A 0E 57` |
 | 断开连接 | DISCONNECT_REQUEST `0x0209` | `06 10 02 09 00 10 01 00 08 01 00 00 00 00 00 00` |
+
+## 设备接入流程（初始模式 → 可通信状态）
+
+下面用一次真实的设备初始化说明「出厂 → 可通信 → 组读写」的接入流程。设备出厂时个体地址为 `15.15.255`、处于编程模式；调试工具先给它编址，再读回地址与设备描述符，之后设备即可加入组通信。以下字节由 `moon run cmd -- demo` 真实打印。
+
+| 步骤 | 服务 | 字节 | 结果 |
+|---|---|---|---|
+| 1. 编址 | `A_IndividualAddress_Write`（APCI `03C0`）+ 目标地址 `1.1.20` | `03 C0 11 14` | 设备存下 `1.1.20`、退出编程模式 |
+| 2. 读回 | `A_IndividualAddress_Read`（APCI `0100`） | `01 00` | 设备回 `A_IndividualAddress_Response`：`01 40 11 14` |
+| 3. 描述符 | `A_DeviceDescriptor_Read`（APCI `0300`） | `03 00` | 设备回 `A_DeviceDescriptor_Response`：`03 40 00 02`（TP1） |
+| 4. 配置 | 组对象表（`device.add` 或 `A_Memory_Write`） | — | 绑定组地址 + DPT |
+| 5. 组读写 | `GroupRead` / `GroupWrite`（组服务） | `00 00` / `00 81`（TPDU） | 进入可通信状态，参与组通信 |
+
+其中 1–3 是设备从「初始模式」进入「可通信状态」的关键：个体地址编程负责把 `15.15.255` 替换成真实地址，描述符读取负责识别设备类型；这两步由库的管理 APCI（`A_IndividualAddress_*`、`A_DeviceDescriptor_*`）与设备端 `commission()` 共同完成，责任边界清晰——调试工具发管理帧、设备在编程模式下应答并落地地址。
 
 ## 端到端报文案例
 

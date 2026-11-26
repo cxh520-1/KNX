@@ -1,5 +1,10 @@
 KNX virtual bus, 3 devices
 
+commissioning (initial mode -> programmed):
+  A_IndividualAddress_Write 03 C0 11 14
+  -> programmed 1.1.20 (programming false)
+  A_IndividualAddress_Read  -> 01 40 11 14
+
 1.1.1    -> 2/1/1   write   true
 1.1.1    -> 2/1/1   read    
 1.1.1    -> 2/1/2   write   80

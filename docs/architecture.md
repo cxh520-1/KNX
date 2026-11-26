@@ -12,9 +12,9 @@ cmd ─→ gateway ─→ knxip ─→ cemi ─→ telegram ─→ addrmodel
 ```
 
 - `addrmodel`：两种地址空间，字段宽度不同，越界在构造时失败。
-- `telegram`：TP1 标准帧与扩展帧、组服务。不认识数据点，只搬运 TPDU。
+- `telegram`：TP1 标准帧与扩展帧、组服务与管理服务（个体地址编程、设备描述符、内存读写）。不认识数据点，只搬运 TPDU。
 - `datapoint`：字节与值互转，含百分比、场景等子类型。
-- `device`：组对象表与读写行为，是总线与应用的边界。
+- `device`：组对象表、读写行为与个体地址编程（出厂设备 → 可通信），是总线与应用的边界。
 - `net`：虚拟总线，广播、收集应答、记录轨迹、按组统计。
 - `busframe`：FT1.2 串口帧（PEI16/RS-232），做字符级定界、控制字段（FCB/FCV、DIR/PRM）与 8 位算术和校验，载荷是 cEMI L_Data 消息。
 - `cemi`：EMI 消息层，`L_Data.req/ind/con` 编解码，串口 FT1.2 与 KNX/IP 隧道共用，在 telegram 与链路之间。
@@ -63,12 +63,11 @@ TPDU 前两字节是 APCI：
 
 ## 为什么设备不认识总线
 
-`device` 只提供 `apply(telegram) -> Telegram?`：写返回空，读返回应答。总线负责把帧送到每个设备并收集结果。这样设备可以单独测试，也可以将来挂在真实 FT1.2 连接后面，而不需要改代码。
+`device` 只提供 `apply(telegram) -> Telegram?`：写返回空，读返回应答。总线负责把帧送到每个设备并收集结果。这样设备可以单独测试，也可以将来挂在真实 FT1.2 连接后面，而不需要改代码。此外 `commission(telegram)` 处理点对点管理帧：出厂设备（`15.15.255`、编程模式）接受 `A_IndividualAddress_Write` 落地新地址，并对 `A_IndividualAddress_Read` / `A_DeviceDescriptor_Read` 应答，完成「初始模式 → 可通信状态」的初始化。
 
 ## 已知缺口
 
 - KNX Secure：安全封装与会话握手未实现。
-- EMI 管理服务（设备描述符读取、内存读写、个体地址服务）未实现；FT1.2 只承载 cEMI L_Data 报文。
 - ETS 工程导入：组地址由调用方配置，没有 `.knxproj` 解析。
 - 总线仲裁时序：虚拟总线只做逻辑投递。
 - 部分厂商自定义 DPT 未覆盖。

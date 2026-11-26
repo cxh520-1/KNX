@@ -51,6 +51,42 @@ fn demo() -> Unit {
   bus.attach(sensor)
   println("KNX virtual bus, " + bus.device_count().to_string() + " devices")
   println("")
+  // Commissioning: a factory-fresh device gets its individual address, then
+  // it can join the group bus.
+  let fresh = @device.Device::fresh("new-lamp")
+  let write_tpdu = @telegram.Mgmt::individual_address_write(ia("1.1.20")).encode() catch {
+    _ => b""
+  }
+  let program = @telegram.Telegram::new(
+    ia("1.1.1"),
+    @telegram.Individual(ia("15.15.255")),
+    write_tpdu,
+  )
+  ignore(fresh.commission(program))
+  let read_answer = match
+    fresh.commission(
+      @telegram.Telegram::new(
+        ia("1.1.1"),
+        @telegram.Individual(fresh.address),
+        @telegram.Mgmt::individual_address_read().encode() catch {
+          _ => b""
+        },
+      ),
+    ) {
+    None => "(no response)"
+    Some(answer) => spaced_hex(answer.tpdu)
+  }
+  println("commissioning (initial mode -> programmed):")
+  println("  A_IndividualAddress_Write " + spaced_hex(write_tpdu))
+  println(
+    "  -> programmed " +
+    fresh.address.to_text() +
+    " (programming " +
+    fresh.in_programming().to_string() +
+    ")",
+  )
+  println("  A_IndividualAddress_Read  -> " + read_answer)
+  println("")
   ignore(
     bus.write(
       switch.address,

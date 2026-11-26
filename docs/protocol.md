@@ -24,9 +24,19 @@
 | GroupRead | `0x0000` | 可用 |
 | GroupResponse | `0x0040` | 可用 |
 | GroupWrite | `0x0080` | 可用 |
-| 个体地址服务 | — | 未实现 |
-| 设备描述符读取 | — | 未实现 |
-| 内存读写 | — | 未实现 |
+
+## 管理服务（点对点 APCI）
+
+| 服务 | 码 | 状态 | 位置 |
+|---|---|---|---|
+| A_IndividualAddress_Read | `0x0100` | 可用 | `lib/telegram/mgmt.mbt` |
+| A_IndividualAddress_Response | `0x0140` | 可用 | 同上 |
+| A_IndividualAddress_Write | `0x03C0` | 可用 | 同上 |
+| A_Memory_Read | `0x0200` | 可用 | 同上 |
+| A_Memory_Response | `0x0240` | 可用 | 同上 |
+| A_Memory_Write | `0x0280` | 可用 | 同上 |
+| A_DeviceDescriptor_Read | `0x0300` | 可用 | 同上 |
+| A_DeviceDescriptor_Response | `0x0340` | 可用 | 同上 |
 
 ## 数据点
 
