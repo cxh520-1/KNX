@@ -103,10 +103,10 @@ KNXnet/IP 隧道是一条持续连接，其完整生命周期由库与调用方�
 | 1. 编址 | `A_IndividualAddress_Write`（APCI `03C0`）+ 目标地址 `1.1.20` | `03 C0 11 14` | 设备存下 `1.1.20`、退出编程模式 |
 | 2. 读回 | `A_IndividualAddress_Read`（APCI `0100`） | `01 00` | 设备回 `A_IndividualAddress_Response`：`01 40 11 14` |
 | 3. 描述符 | `A_DeviceDescriptor_Read`（APCI `0300`） | `03 00` | 设备回 `A_DeviceDescriptor_Response`：`03 40 00 02`（TP1） |
-| 4. 配置 | 组对象表（`device.add` 或 `A_Memory_Write`） | — | 绑定组地址 + DPT |
+| 4. 配置 | 组对象表（`device.add` API；`A_Memory_Write` 提供线缆级编解码） | — | 绑定组地址 + DPT |
 | 5. 组读写 | `GroupRead` / `GroupWrite`（组服务） | `00 00` / `00 81`（TPDU） | 进入可通信状态，参与组通信 |
 
-其中 1–3 是设备从「初始模式」进入「可通信状态」的关键：个体地址编程负责把 `15.15.255` 替换成真实地址，描述符读取负责识别设备类型；这两步由库的管理 APCI（`A_IndividualAddress_*`、`A_DeviceDescriptor_*`）与设备端 `commission()` 共同完成，责任边界清晰——调试工具发管理帧、设备在编程模式下应答并落地地址。
+其中 1–3 是设备从「初始模式」进入「可通信状态」的关键：个体地址编程负责把 `15.15.255` 替换成真实地址，描述符读取负责识别设备类型；这两步由库的管理 APCI（`A_IndividualAddress_*`、`A_DeviceDescriptor_*`）与设备端 `commission()` 共同完成，责任边界清晰——调试工具发管理帧、设备在编程模式下应答并落地地址。第 4 步的组对象配置，库用 `add()` API 在设备模型里直接完成（这是内存写入配置的编程等价物）；`A_Memory_Read/Write/Response` 的字节级编解码也已实现并测试，供调试工具侧按真实设备的内存地址读写，而具体内存布局属于设备厂商的 ETS 产品数据库、不在本库范围内。
 
 ## 端到端报文案例
 
